@@ -227,6 +227,12 @@ export async function getShift(shopId) {
   return wrap(tx.objectStore(STORES.CURRENT_SHIFT).get(String(shopId)));
 }
 
+export async function getAllShifts() {
+  const db = await openDB();
+  const tx = db.transaction(STORES.CURRENT_SHIFT, 'readonly');
+  return wrap(tx.objectStore(STORES.CURRENT_SHIFT).getAll());
+}
+
 export async function saveShift(shiftData) {
   const db = await openDB();
   const tx = db.transaction(STORES.CURRENT_SHIFT, 'readwrite');

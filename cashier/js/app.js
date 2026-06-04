@@ -3,8 +3,8 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { configureSyncEngine, setupOnlineListener, refreshEmployeeCache, refreshProductCache } from './sync.js';
-import { isAuthenticated, login, logout, getPublicSession } from './auth.js';
-import { getShift }             from './db.js';
+import { login, logout, getPublicSession } from './auth.js';
+import { getShift, getAllShifts, clearShift } from './db.js';
 import { initScanner }          from './scanner.js';
 import { initPOS, updatePOSHeader }    from './pos.js';
 import { initShiftOpen, initShiftClose, resetShiftClose } from './shift.js';
@@ -134,12 +134,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     await Promise.allSettled([refreshEmployeeCache(), refreshProductCache()]);
   }
 
-  // 6. Початковий екран
-  if (isAuthenticated()) {
-    await _navigateAfterAuth();
-  } else {
-    showScreen('login');
-  }
+  // 6. Прибрати застарілі зміни (залишити найновішу, якщо є кілька)
+  await _cleanupStaleShifts();
+
+  // 7. Завжди починати з PIN — сесія зберігається тільки в пам'яті і скидається при перезавантаженні
+  showScreen('login');
 });
 
 // ─── PIN ─────────────────────────────────────────────────────────────────────
@@ -183,6 +182,17 @@ function _initPinPad() {
       }
     });
   });
+}
+
+// При старті: якщо в IndexedDB є зміни для кількох магазинів (нештатна ситуація),
+// залишаємо тільки найновішу за opened_at, решту видаляємо.
+async function _cleanupStaleShifts() {
+  const shifts = await getAllShifts();
+  if (shifts.length <= 1) return;
+  shifts.sort((a, b) => new Date(b.opened_at) - new Date(a.opened_at));
+  for (const stale of shifts.slice(1)) {
+    await clearShift(stale.shop_id);
+  }
 }
 
 async function _navigateAfterAuth() {
