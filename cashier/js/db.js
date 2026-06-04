@@ -137,6 +137,14 @@ export async function upsertProducts(rawArray) {
   await txComplete(tx);
 }
 
+/** Зберігає або оновлює один товар (вже нормалізований об'єкт). */
+export async function upsertProduct(product) {
+  const db = await openDB();
+  const tx = db.transaction(STORES.PRODUCTS, 'readwrite');
+  tx.objectStore(STORES.PRODUCTS).put(product);
+  await txComplete(tx);
+}
+
 /** Оновлює залишок одного товару після продажу (офлайн-оновлення кешу). */
 export async function adjustProductStock(productId, delta) {
   const db      = await openDB();

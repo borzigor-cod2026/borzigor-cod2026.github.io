@@ -5,6 +5,7 @@
 import { PRODUCT_GROUPS }                    from '../../shared/constants.js';
 import {
   findProductByBarcode,
+  upsertProduct,
   upsertProducts,
   normalizeProduct,
   adjustProductStock,
@@ -197,9 +198,9 @@ async function _submit() {
 
   // Оновити локальний кеш товарів
   const products = await findProductByBarcode(barcode);
+  const netQty   = qty - rejQty;
   if (products.length > 0) {
     const existing = products[0];
-    const netQty   = qty - rejQty;
 
     // Оновити залишок
     if (netQty !== 0) await adjustProductStock(existing.id, netQty);
@@ -208,6 +209,24 @@ async function _submit() {
     if (group === TOBACCO_GROUP && mrc > 0 && mrc !== existing.mrc) {
       await upsertProducts([normalizeProduct({ ...existing, mrc })]);
     }
+  } else {
+    // Новий товар — додати до локального кешу щоб сканер міг його знайти
+    await upsertProduct({
+      id:             `${barcode}_${sell}_${session.shop_id}`,
+      barcode,
+      name,
+      group,
+      subgroup,
+      sell_price:     sell,
+      purchase_price: buy,
+      stock:          netQty,
+      mrc,
+      volume_l:       0,
+      strength:       0,
+      shop_id:        session.shop_id,
+      active:         true,
+      updated_at:     nowISO(),
+    });
   }
 
   await saveOperation({
