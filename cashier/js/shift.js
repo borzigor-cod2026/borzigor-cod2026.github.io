@@ -16,7 +16,7 @@ const SHOPS = [
 //  ВІДКРИТТЯ ЗМІНИ
 // ─────────────────────────────────────────────────────────────────────────────
 
-export function initShiftOpen() {
+export async function initShiftOpen() {
   const sel = document.getElementById('shift-shop');
   SHOPS.forEach(s => {
     const opt = document.createElement('option');
@@ -30,8 +30,19 @@ export function initShiftOpen() {
     if (session?.shop_id) sel.value = session.shop_id;
   } catch (_) {}
 
+  // Заповнити лічильник із активної зміни (якщо є)
+  await _prefillMeter(sel.value);
+  sel.addEventListener('change', () => _prefillMeter(sel.value));
+
   document.getElementById('form-shift-open')
     .addEventListener('submit', async e => { e.preventDefault(); await _openShift(); });
+}
+
+async function _prefillMeter(shopId) {
+  const meterInput = document.getElementById('shift-meter-start');
+  if (!meterInput) return;
+  const shift = await getShift(shopId);
+  meterInput.value = shift?.meter_start ?? '';
 }
 
 async function _openShift() {
@@ -39,7 +50,16 @@ async function _openShift() {
   const meter  = parseFloat(document.getElementById('shift-meter-start').value);
   if (!shopId || isNaN(meter)) return;
 
-  const session  = requireAuth();
+  const session = requireAuth();
+
+  // Якщо зміна вже відкрита (відновлення після перезавантаження) — просто переходимо на POS
+  const existing = await getShift(shopId);
+  if (existing) {
+    const { showScreen } = await import('./app.js');
+    showScreen('pos');
+    return;
+  }
+
   const shiftUUID = generateUUID();
   const now       = nowISO();
 

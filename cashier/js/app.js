@@ -4,7 +4,7 @@
 
 import { configureSyncEngine, setupOnlineListener, refreshEmployeeCache, refreshProductCache } from './sync.js';
 import { login, logout, getPublicSession } from './auth.js';
-import { getShift, getAllShifts, clearShift } from './db.js';
+import { getAllShifts, clearShift } from './db.js';
 import { initScanner }          from './scanner.js';
 import { initPOS, updatePOSHeader }    from './pos.js';
 import { initShiftOpen, initShiftClose, resetShiftClose } from './shift.js';
@@ -198,9 +198,9 @@ async function _cleanupStaleShifts() {
 async function _navigateAfterAuth() {
   const session = getPublicSession();
   if (!session) { showScreen('login'); return; }
-
-  const shift = await getShift(session.shop_id);
-  showScreen(shift ? 'pos' : 'shift-open');
+  // Always go through shift-open so the cashier confirms shop and meter.
+  // If an active shift exists it will pre-fill those fields (see shift.js).
+  showScreen('shift-open');
 }
 
 // ─── ВИХІД ПІСЛЯ ЗАКРИТТЯ ЗМІНИ ──────────────────────────────────────────────
