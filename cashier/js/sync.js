@@ -79,7 +79,7 @@ export async function syncPending() {
     try {
       response = await fetch(url, {
         method:  'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'text/plain' },
         body,
       });
     } catch (_networkErr) {
