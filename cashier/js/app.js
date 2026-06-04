@@ -2,7 +2,7 @@
 //  cashier/js/app.js — маршрутизатор екранів PWA касира
 // ─────────────────────────────────────────────────────────────────────────────
 
-import { configureSyncEngine, setupOnlineListener } from './sync.js';
+import { configureSyncEngine, setupOnlineListener, refreshEmployeeCache, refreshProductCache } from './sync.js';
 import { isAuthenticated, login, logout, getPublicSession } from './auth.js';
 import { getShift }             from './db.js';
 import { initScanner }          from './scanner.js';
@@ -128,7 +128,13 @@ document.addEventListener('DOMContentLoaded', async () => {
   // 4. Кнопка «назад» у заголовку
   document.getElementById('hdr-back')?.addEventListener('click', () => showScreen('pos'));
 
-  // 5. Початковий екран
+  // 5. Початкова синхронізація — завантажити список касирів і товарів з GAS
+  //    перед відображенням екрана входу (потребує shopId у localStorage)
+  if (navigator.onLine) {
+    await Promise.allSettled([refreshEmployeeCache(), refreshProductCache()]);
+  }
+
+  // 6. Початковий екран
   if (isAuthenticated()) {
     await _navigateAfterAuth();
   } else {

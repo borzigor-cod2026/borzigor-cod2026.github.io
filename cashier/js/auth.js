@@ -29,8 +29,13 @@ export async function login(pin) {
     return { success: false, error: 'PIN не може бути порожнім' };
   }
 
-  const pinHash  = await digestSHA256(String(pin));
-  const employee = await findEmployeeByPinHash(pinHash);
+  const pinHash = await digestSHA256(String(pin));
+  let employee;
+  try {
+    employee = await findEmployeeByPinHash(pinHash);
+  } catch (_dbErr) {
+    return { success: false, error: 'Помилка бази даних. Перезавантажте сторінку.' };
+  }
 
   if (!employee) {
     return { success: false, error: 'Невірний PIN. Спробуйте ще раз.' };

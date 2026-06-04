@@ -8,7 +8,7 @@ export const API_VERSION = '2';
 
 export const CASHIER_DB_NAME = 'cashier_pos_v1';
 export const ADMIN_DB_NAME   = 'admin_panel_v1';
-export const DB_VERSION      = 1;
+export const DB_VERSION      = 2;
 
 export const STORES = {
   PENDING_OPS:   'pending_operations',
