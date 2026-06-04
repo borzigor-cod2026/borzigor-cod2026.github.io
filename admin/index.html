@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#1B5E20">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>Адмін — Облік продажів</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="stylesheet" href="css/main.css">
+</head>
+<body>
+
+<div id="app">
+
+  <!-- ═══ HEADER ══════════════════════════════════════════════════════════ -->
+  <header class="app-header">
+    <span class="header-title">Адмін-панель</span>
+    <button id="btn-logout" class="btn-header" hidden>Вийти</button>
+  </header>
+
+  <!-- ═══ MAIN ════════════════════════════════════════════════════════════ -->
+  <main class="app-main">
+
+    <!-- ─── SCREEN: LOGIN ─────────────────────────────────────────────── -->
+    <div id="screen-login" class="screen is-active">
+      <div class="login-logo">Адмін</div>
+      <p class="login-prompt">Введіть PIN адміністратора</p>
+      <div class="pin-dots">
+        <div class="pin-dot"></div>
+        <div class="pin-dot"></div>
+        <div class="pin-dot"></div>
+        <div class="pin-dot"></div>
+        <div class="pin-dot"></div>
+        <div class="pin-dot"></div>
+      </div>
+      <p id="login-error" class="login-error" role="alert"></p>
+      <div class="pin-keyboard" role="group" aria-label="Цифрова клавіатура">
+        <button class="pin-key" data-value="1">1</button>
+        <button class="pin-key" data-value="2">2</button>
+        <button class="pin-key" data-value="3">3</button>
+        <button class="pin-key" data-value="4">4</button>
+        <button class="pin-key" data-value="5">5</button>
+        <button class="pin-key" data-value="6">6</button>
+        <button class="pin-key" data-value="7">7</button>
+        <button class="pin-key" data-value="8">8</button>
+        <button class="pin-key" data-value="9">9</button>
+        <button class="pin-key pin-key--empty" aria-hidden="true" tabindex="-1"></button>
+        <button class="pin-key" data-value="0">0</button>
+        <button class="pin-key pin-key--backspace" data-value="del" aria-label="Видалити">⌫</button>
+      </div>
+    </div>
+
+    <!-- ─── SCREEN: DASHBOARD ──────────────────────────────────────────── -->
+    <div id="screen-dashboard" class="screen">
+      <div class="screen-content">
+
+        <!-- Алерти — показуються тільки якщо є -->
+        <section id="dash-alerts" hidden>
+          <div class="section-title">Увага</div>
+          <div id="dash-alert-list" class="flex flex-col gap-sm"></div>
+        </section>
+
+        <!-- KPI сьогодні -->
+        <div class="section-title">Сьогодні</div>
+        <div id="dash-kpi" class="flex flex-col gap"></div>
+
+      </div>
+    </div>
+
+    <!-- ─── SCREEN: EXPENSES ───────────────────────────────────────────── -->
+    <div id="screen-expenses" class="screen">
+      <div class="screen-content">
+        <div class="section-title">Витрати на затвердження</div>
+        <div id="expenses-list" class="flex flex-col gap"></div>
+      </div>
+    </div>
+
+    <!-- ─── SCREEN: INVENTORY ──────────────────────────────────────────── -->
+    <div id="screen-inventory" class="screen">
+      <div class="screen-content">
+        <div class="section-title">Інвентаризації</div>
+        <div id="inventory-list" class="flex flex-col gap"></div>
+      </div>
+    </div>
+
+    <!-- ─── SCREEN: SALARY ─────────────────────────────────────────────── -->
+    <div id="screen-salary" class="screen">
+      <div class="screen-content">
+        <div class="section-title">Зарплата</div>
+        <div id="salary-list" class="flex flex-col gap"></div>
+      </div>
+    </div>
+
+    <!-- ─── SCREEN: PRODUCTS ───────────────────────────────────────────── -->
+    <div id="screen-products" class="screen">
+
+      <!-- Нові товари від касира (вгорі) -->
+      <section id="new-products-section" hidden>
+        <div class="section-title">Нові товари від касира</div>
+        <div id="new-products-list" class="flex flex-col gap" style="padding:0 var(--gap) var(--gap)"></div>
+      </section>
+
+      <!-- Пошук всіх товарів -->
+      <div class="section-title">Всі товари</div>
+      <div style="padding:0 var(--gap) var(--gap)">
+        <input id="product-search"
+               class="form-input"
+               type="search"
+               placeholder="Пошук за назвою або штрихкодом"
+               autocomplete="off">
+      </div>
+      <div id="product-list"></div>
+    </div>
+
+    <!-- ─── SCREEN: REPORTS ────────────────────────────────────────────── -->
+    <div id="screen-reports" class="screen">
+
+      <!-- Фільтр -->
+      <form id="report-filter-form" class="filter-form" novalidate>
+        <div class="form-group">
+          <label class="form-label" for="rep-shop">Магазин</label>
+          <select id="rep-shop" class="form-select">
+            <option value="all">Обидва</option>
+            <option value="shop_1">Магазин №1</option>
+            <option value="shop_2">Магазин №2</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="rep-date-from">З дати</label>
+          <input id="rep-date-from" class="form-input" type="date" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="rep-date-to">По дату</label>
+          <input id="rep-date-to" class="form-input" type="date" required>
+        </div>
+        <button type="submit" class="btn btn--primary" style="align-self:flex-end">Показати</button>
+      </form>
+
+      <!-- Підсумок та таблиця змін -->
+      <div id="report-container" class="screen-content" style="padding-top:0"></div>
+    </div>
+
+  </main>
+
+  <!-- ═══ BOTTOM NAV ══════════════════════════════════════════════════════ -->
+  <nav id="admin-nav" hidden role="navigation" aria-label="Навігація">
+    <button class="nav-tab" data-screen="dashboard">
+      <span class="nav-tab__icon">📊</span>
+      <span>Зведення</span>
+    </button>
+    <button class="nav-tab" data-screen="expenses">
+      <span class="nav-tab__icon">💸</span>
+      <span>Витрати</span>
+    </button>
+    <button class="nav-tab" data-screen="inventory">
+      <span class="nav-tab__icon">📦</span>
+      <span>Інвентар</span>
+    </button>
+    <button class="nav-tab" data-screen="salary">
+      <span class="nav-tab__icon">💰</span>
+      <span>Зарплата</span>
+    </button>
+    <button class="nav-tab" data-screen="products">
+      <span class="nav-tab__icon">🏷️</span>
+      <span>Товари</span>
+    </button>
+    <button class="nav-tab" data-screen="reports">
+      <span class="nav-tab__icon">📈</span>
+      <span>Звіти</span>
+    </button>
+  </nav>
+
+</div><!-- /#app -->
+
+<script type="module" src="js/app.js"></script>
+<script>
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('./sw.js');
+  }
+</script>
+</body>
+</html>

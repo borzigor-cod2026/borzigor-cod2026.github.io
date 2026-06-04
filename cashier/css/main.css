@@ -1,0 +1,1026 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   cashier/css/main.css
+   Mobile-first. Tablet ≥768px: двоколонковий POS (кошик + оплата).
+   ══════════════════════════════════════════════════════════════════════════ */
+
+/* ─── CSS Variables ──────────────────────────────────────────────────────── */
+:root {
+  --c-primary:      #1A237E;
+  --c-primary-d:    #0D1750;
+  --c-primary-l:    #3F51B5;
+  --c-success:      #2E7D32;
+  --c-warning:      #E65100;
+  --c-danger:       #C62828;
+  --c-info:         #1565C0;
+
+  --c-surface:      #FFFFFF;
+  --c-surface-alt:  #F5F5F5;
+  --c-border:       #E0E0E0;
+  --c-text:         #212121;
+  --c-muted:        #757575;
+
+  --r:              8px;   /* border-radius base */
+  --r-lg:           14px;
+  --r-full:         9999px;
+
+  --touch:          48px;  /* мінімальний розмір кнопки */
+  --gap:            12px;
+  --gap-lg:         20px;
+  --gap-sm:         8px;
+
+  --header-h:       56px;
+
+  --shadow-sm: 0 1px 3px rgba(0,0,0,.12), 0 1px 2px rgba(0,0,0,.08);
+  --shadow:    0 2px 6px rgba(0,0,0,.15);
+  --shadow-lg: 0 4px 16px rgba(0,0,0,.2);
+
+  --font: 'Roboto', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --t:    200ms ease; /* transition */
+}
+
+/* ─── Reset ──────────────────────────────────────────────────────────────── */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  -webkit-tap-highlight-color: transparent;
+}
+
+html {
+  height: 100%;
+  -webkit-text-size-adjust: 100%;
+  font-size: 16px;
+}
+
+body {
+  min-height: 100%;
+  font-family: var(--font);
+  color: var(--c-text);
+  background: var(--c-surface-alt);
+  overscroll-behavior: none;
+  /* Блокуємо випадкове виділення тексту при швидких тачах */
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+input, textarea, select { user-select: auto; -webkit-user-select: auto; }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   APP SHELL
+   ═══════════════════════════════════════════════════════════════════════════ */
+#app {
+  display: flex;
+  flex-direction: column;
+  height: 100dvh;   /* dynamic viewport height — враховує панель браузера */
+  overflow: hidden;
+}
+
+/* ─── Header ────────────────────────────────────────────────────────────── */
+.app-header {
+  flex-shrink: 0;
+  height: var(--header-h);
+  background: var(--c-primary);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  padding: 0 var(--gap);
+  gap: var(--gap);
+  box-shadow: var(--shadow-sm);
+  z-index: 100;
+}
+
+.header-shop  { font-weight: 700; font-size: 1rem; white-space: nowrap; flex-shrink: 0; }
+.header-shift { font-size: .78rem; opacity: .75; flex-shrink: 0; }
+.header-space { flex: 1; }
+.header-seller {
+  font-size: .82rem;
+  opacity: .9;
+  max-width: 110px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Індикатор синхронізації */
+.sync-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: #66BB6A;
+  flex-shrink: 0;
+}
+.sync-dot--pending { background: #FFA726; }
+.sync-dot--error   { background: #EF5350; animation: blink 1s ease infinite; }
+.sync-dot--offline { background: #9E9E9E; }
+
+@keyframes blink { 0%,100%{ opacity:1 } 50%{ opacity:.3 } }
+
+/* Індикатор режиму сканера (ТЗ 12.4) */
+.scan-badge {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: .72rem;
+  padding: 3px 8px;
+  border-radius: var(--r-full);
+  background: rgba(255,255,255,.15);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.scan-badge--hid  { background: rgba(21,101,192,.5); }
+.scan-badge--cam  { background: rgba(255,255,255,.12); }
+
+/* ─── Main content area ─────────────────────────────────────────────────── */
+.app-main {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   SCREENS
+   Кожен екран — абсолютний шар повна висота.
+   Активний: display:flex; решта — display:none.
+   ═══════════════════════════════════════════════════════════════════════════ */
+.screen {
+  position: absolute;
+  inset: 0;
+  display: none;
+  flex-direction: column;
+  background: var(--c-surface-alt);
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+}
+
+.screen.is-active { display: flex; }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   ЕКРАН ВХОДУ (PIN)
+   ═══════════════════════════════════════════════════════════════════════════ */
+#screen-login {
+  background: var(--c-primary);
+  align-items: center;
+  justify-content: center;
+  gap: var(--gap-lg);
+  padding: var(--gap-lg);
+}
+
+.login-logo {
+  color: #fff;
+  font-size: 1.5rem;
+  font-weight: 800;
+  text-align: center;
+  letter-spacing: .5px;
+}
+
+.login-prompt {
+  color: rgba(255,255,255,.72);
+  font-size: .9rem;
+  text-align: center;
+}
+
+/* Крапки PIN */
+.pin-dots {
+  display: flex;
+  gap: 14px;
+  justify-content: center;
+  min-height: 18px;
+}
+
+.pin-dot {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 2px solid rgba(255,255,255,.5);
+  transition: background var(--t), border-color var(--t);
+}
+
+.pin-dot.filled {
+  background: #fff;
+  border-color: #fff;
+}
+
+/* Цифрова клавіатура */
+.pin-keyboard {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--gap);
+  width: 100%;
+  max-width: 300px;
+}
+
+.pin-key {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 70px;
+  border-radius: var(--r-lg);
+  background: rgba(255,255,255,.14);
+  border: none;
+  color: #fff;
+  font-size: 1.6rem;
+  font-weight: 600;
+  font-family: var(--font);
+  cursor: pointer;
+  transition: background var(--t), transform .1s;
+}
+
+.pin-key:active          { background: rgba(255,255,255,.32); transform: scale(.94); }
+.pin-key--backspace      { font-size: 1.25rem; }
+.pin-key--empty          { background: transparent !important; pointer-events: none; }
+
+.login-error {
+  color: #FFCDD2;
+  font-size: .9rem;
+  text-align: center;
+  min-height: 1.3em;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   POS-ЕКРАН (КАСА)
+   Мобільний: одна колонка. Планшет ≥768px: дві колонки.
+   ═══════════════════════════════════════════════════════════════════════════ */
+#screen-pos {
+  overflow: hidden;   /* не scroll — вкладені панелі прокручуються самі */
+}
+
+.pos-layout {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+}
+
+/* ─── Кошик (ліва колонка на планшеті) ─────────────────────────────────── */
+.pos-cart-panel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--c-surface);
+}
+
+.cart-list {
+  flex: 1;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 6px 0;
+}
+
+/* Порожній кошик */
+.cart-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  gap: 10px;
+  color: var(--c-muted);
+  font-size: .95rem;
+}
+
+.cart-empty-icon { font-size: 3rem; opacity: .35; }
+
+/* Рядок товару у кошику */
+.cart-item {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  grid-template-rows: auto auto;
+  align-items: start;
+  padding: 10px var(--gap);
+  border-bottom: 1px solid var(--c-border);
+  gap: 2px var(--gap);
+  transition: background var(--t);
+}
+
+.cart-item.is-return  { background: #FFF3E0; }
+
+.cart-item.low-stock  {
+  background: #FFF8E1;
+  border-left: 3px solid var(--c-warning);
+}
+
+.cart-item__name {
+  font-size: .95rem;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.cart-item__meta {
+  font-size: .78rem;
+  color: var(--c-muted);
+}
+
+.cart-item__total {
+  font-size: 1.05rem;
+  font-weight: 800;
+  text-align: right;
+  grid-column: 2;
+  grid-row: 1 / 3;
+  align-self: center;
+}
+
+.cart-item__controls {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  grid-column: 1;
+  margin-top: 2px;
+}
+
+.qty-btn {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  border: 1px solid var(--c-border);
+  background: var(--c-surface-alt);
+  font-size: 1.1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: var(--c-text);
+  flex-shrink: 0;
+}
+
+.qty-btn:active { background: var(--c-border); }
+
+.qty-value {
+  min-width: 36px;
+  text-align: center;
+  font-size: .95rem;
+  font-weight: 600;
+}
+
+.btn-remove-item {
+  margin-left: auto;
+  width: 30px;
+  height: 30px;
+  border: none;
+  background: transparent;
+  color: var(--c-muted);
+  font-size: 1.3rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+}
+
+.btn-remove-item:active { background: #FFEBEE; color: var(--c-danger); }
+
+/* ─── Панель підсумку та оплати (права колонка на планшеті) ─────────────── */
+.pos-payment-panel {
+  background: var(--c-surface);
+  border-top: 2px solid var(--c-border);
+  padding: var(--gap);
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap-sm);
+}
+
+.cart-total-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: .9rem;
+}
+
+.cart-total-row.grand-total {
+  font-size: 1.5rem;
+  font-weight: 800;
+  padding-top: var(--gap-sm);
+  border-top: 2px solid var(--c-border);
+  margin-top: 2px;
+}
+
+/* Кнопки типу оплати */
+.payment-type-group {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--gap-sm);
+}
+
+.payment-btn {
+  height: var(--touch);
+  border-radius: var(--r);
+  border: 2px solid var(--c-border);
+  background: var(--c-surface);
+  font-size: .95rem;
+  font-weight: 600;
+  font-family: var(--font);
+  cursor: pointer;
+  transition: all var(--t);
+  color: var(--c-text);
+}
+
+.payment-btn.is-active {
+  border-color: var(--c-primary);
+  background: #E8EAF6;
+  color: var(--c-primary);
+}
+
+/* Кнопка «Оплатити» */
+.btn-checkout {
+  height: 58px;
+  border-radius: var(--r);
+  border: none;
+  background: var(--c-success);
+  color: #fff;
+  font-size: 1.1rem;
+  font-weight: 700;
+  font-family: var(--font);
+  cursor: pointer;
+  letter-spacing: .5px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: background var(--t), transform .1s;
+}
+
+.btn-checkout:active   { background: #1B5E20; transform: scale(.98); }
+.btn-checkout:disabled { background: #B0BEC5; }
+
+/* Рядок допоміжних дій */
+.pos-action-bar {
+  display: flex;
+  padding: 8px var(--gap);
+  background: var(--c-surface-alt);
+  border-top: 1px solid var(--c-border);
+  gap: var(--gap-sm);
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+
+.pos-action-bar::-webkit-scrollbar { display: none; }
+
+/* ─── TABLET ≥768px: двоколонковий POS ─────────────────────────────────── */
+@media (min-width: 768px) {
+  .pos-layout { flex-direction: row; }
+
+  .pos-cart-panel {
+    flex: 3;             /* ~60% */
+    border-right: 1px solid var(--c-border);
+    border-top: none;
+  }
+
+  .pos-payment-panel {
+    flex: 2;             /* ~40% */
+    border-top: none;
+    overflow-y: auto;
+    padding: var(--gap-lg);
+    justify-content: flex-end;  /* підсумок і кнопка завжди внизу */
+    gap: var(--gap);
+  }
+
+  .cart-total-row.grand-total { font-size: 1.75rem; }
+
+  .btn-checkout { height: 68px; font-size: 1.2rem; }
+
+  .pos-action-bar {
+    flex-wrap: wrap;
+    overflow-x: visible;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   ФОРМИ (Зміна / Витрата / Прихід)
+   ═══════════════════════════════════════════════════════════════════════════ */
+.form-screen {
+  padding: var(--gap-lg);
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap-lg);
+  max-width: 520px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.form-screen-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--c-primary);
+  text-align: center;
+}
+
+.form-screen-subtitle {
+  font-size: .875rem;
+  color: var(--c-muted);
+  text-align: center;
+  margin-top: -12px;
+}
+
+/* Підказка «сліпого вводу» готівки (ТЗ 16.2) */
+.blind-cash-note {
+  background: #FFF3E0;
+  border: 1px solid #FFB74D;
+  border-radius: var(--r);
+  padding: var(--gap);
+  font-size: .9rem;
+  color: #BF360C;
+  text-align: center;
+  line-height: 1.5;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   ФОРМ КОМПОНЕНТИ
+   ═══════════════════════════════════════════════════════════════════════════ */
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.form-label {
+  font-size: .78rem;
+  font-weight: 700;
+  color: var(--c-muted);
+  text-transform: uppercase;
+  letter-spacing: .5px;
+}
+
+.form-input {
+  height: var(--touch);
+  padding: 0 14px;
+  border: 1.5px solid var(--c-border);
+  border-radius: var(--r);
+  background: var(--c-surface);
+  font-size: 1rem;
+  color: var(--c-text);
+  font-family: var(--font);
+  width: 100%;
+  transition: border-color var(--t), box-shadow var(--t);
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.form-input:focus {
+  outline: none;
+  border-color: var(--c-primary);
+  box-shadow: 0 0 0 3px rgba(26,35,126,.12);
+}
+
+.form-input--xl {
+  height: 68px;
+  font-size: 1.8rem;
+  font-weight: 800;
+  text-align: right;
+  padding-right: 16px;
+}
+
+/* Select з кастомною стрілкою */
+.form-select {
+  height: var(--touch);
+  padding: 0 36px 0 14px;
+  border: 1.5px solid var(--c-border);
+  border-radius: var(--r);
+  background-color: var(--c-surface);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath fill='%23757575' d='M5 6L0 0h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 14px center;
+  font-size: 1rem;
+  color: var(--c-text);
+  font-family: var(--font);
+  width: 100%;
+  cursor: pointer;
+  -webkit-appearance: none;
+  appearance: none;
+  transition: border-color var(--t);
+}
+
+.form-select:focus {
+  outline: none;
+  border-color: var(--c-primary);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   КНОПКИ
+   ═══════════════════════════════════════════════════════════════════════════ */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: var(--touch);
+  padding: 0 20px;
+  border-radius: var(--r);
+  border: none;
+  font-size: 1rem;
+  font-weight: 600;
+  font-family: var(--font);
+  cursor: pointer;
+  transition: background var(--t), transform .1s;
+  white-space: nowrap;
+  text-decoration: none;
+}
+
+.btn:active    { transform: scale(.96); }
+.btn:disabled  { opacity: .45; pointer-events: none; }
+
+.btn--primary {
+  background: var(--c-primary);
+  color: #fff;
+}
+.btn--primary:active { background: var(--c-primary-d); }
+
+.btn--success {
+  background: var(--c-success);
+  color: #fff;
+}
+.btn--success:active { background: #1B5E20; }
+
+.btn--danger {
+  background: var(--c-danger);
+  color: #fff;
+}
+
+.btn--warning {
+  background: var(--c-warning);
+  color: #fff;
+}
+
+.btn--outline {
+  background: transparent;
+  border: 1.5px solid var(--c-border);
+  color: var(--c-text);
+}
+.btn--outline:active { background: var(--c-surface-alt); }
+
+.btn--ghost {
+  background: transparent;
+  color: var(--c-primary);
+}
+
+.btn--full    { width: 100%; }
+.btn--large   { height: 58px; font-size: 1.1rem; }
+.btn--compact { height: 38px; padding: 0 14px; font-size: .875rem; }
+
+.btn-icon {
+  width: var(--touch);
+  height: var(--touch);
+  padding: 0;
+  border-radius: 50%;
+  border: 1.5px solid var(--c-border);
+  background: var(--c-surface);
+  font-size: 1.2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: var(--c-text);
+}
+
+/* Кнопка-плашка в рядку дій */
+.action-btn {
+  height: 42px;
+  padding: 0 14px;
+  border-radius: var(--r);
+  border: 1.5px solid var(--c-border);
+  background: var(--c-surface);
+  font-size: .85rem;
+  font-family: var(--font);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+  color: var(--c-text);
+  transition: background var(--t);
+  flex-shrink: 0;
+}
+
+.action-btn:active   { background: var(--c-surface-alt); }
+.action-btn--warn    { border-color: var(--c-warning); color: var(--c-warning); }
+.action-btn--primary { border-color: var(--c-primary); color: var(--c-primary); }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   КАРТКИ
+   ═══════════════════════════════════════════════════════════════════════════ */
+.card {
+  background: var(--c-surface);
+  border-radius: var(--r);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+}
+
+.card__header {
+  padding: var(--gap);
+  border-bottom: 1px solid var(--c-border);
+  font-weight: 700;
+  font-size: .95rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.card__body { padding: var(--gap); }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   МОДАЛЬНІ ВІКНА
+   На мобільному — bottom sheet. На планшеті — по центру.
+   ═══════════════════════════════════════════════════════════════════════════ */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.52);
+  z-index: 500;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  animation: fade-in .15s ease;
+}
+
+.modal-overlay[hidden] { display: none; }
+
+@keyframes fade-in { from { opacity:0 } to { opacity:1 } }
+
+.modal {
+  background: var(--c-surface);
+  border-radius: var(--r-lg) var(--r-lg) 0 0;
+  padding: var(--gap-lg);
+  padding-bottom: calc(var(--gap-lg) + env(safe-area-inset-bottom, 0px));
+  width: 100%;
+  max-width: 560px;
+  max-height: 92dvh;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  animation: slide-up .2s ease;
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap);
+}
+
+@keyframes slide-up {
+  from { transform:translateY(24px); opacity:0 }
+  to   { transform:translateY(0);    opacity:1 }
+}
+
+@media (min-width: 768px) {
+  .modal-overlay { align-items: center; padding: var(--gap-lg); }
+  .modal { border-radius: var(--r-lg); max-height: 85dvh; }
+}
+
+.modal__title {
+  font-size: 1.15rem;
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+
+.modal__body { flex: 1; }
+
+.modal__actions {
+  display: flex;
+  gap: var(--gap-sm);
+  margin-top: 4px;
+}
+
+.modal__actions .btn { flex: 1; }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   БАНЕРИ (inline попередження, не toast)
+   ═══════════════════════════════════════════════════════════════════════════ */
+.banner {
+  padding: 12px var(--gap);
+  border-radius: var(--r);
+  font-size: .9rem;
+  font-weight: 500;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  line-height: 1.5;
+}
+
+.banner--warning { background:#FFF3E0; border:1px solid #FFB74D; color:#BF360C; }
+.banner--danger  { background:#FFEBEE; border:1px solid #EF9A9A; color:var(--c-danger); }
+.banner--info    { background:#E3F2FD; border:1px solid #90CAF9; color:#0D47A1; }
+.banner--success { background:#E8F5E9; border:1px solid #A5D6A7; color:#1B5E20; }
+
+/* Flash banner (showBanner утиліта) */
+.flash-banner {
+  position: fixed;
+  top: calc(var(--header-h) + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1000;
+  max-width: 90vw;
+  white-space: nowrap;
+  pointer-events: none;
+  box-shadow: var(--shadow);
+  animation: flash-in .2s ease;
+}
+
+@keyframes flash-in {
+  from { opacity:0; transform:translateX(-50%) translateY(-8px) }
+  to   { opacity:1; transform:translateX(-50%) translateY(0) }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   ДІАЛОГ ВИБОРУ ТОВАРУ (декілька цін на штрихкод, ТЗ 16.6)
+   ═══════════════════════════════════════════════════════════════════════════ */
+.product-choice-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap-sm);
+}
+
+.product-choice-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px var(--gap);
+  border: 2px solid var(--c-border);
+  border-radius: var(--r);
+  cursor: pointer;
+  transition: border-color var(--t), background var(--t);
+  background: var(--c-surface);
+}
+
+.product-choice-item:active {
+  border-color: var(--c-primary);
+  background: #E8EAF6;
+}
+
+.product-choice-info { display:flex; flex-direction:column; gap:2px; }
+.product-choice-name { font-size:.95rem; font-weight:600; }
+.product-choice-stock {
+  font-size:.78rem;
+  color: var(--c-muted);
+}
+.product-choice-stock.low  { color: var(--c-danger); }
+
+.product-choice-price {
+  font-size: 1.3rem;
+  font-weight: 800;
+  color: var(--c-primary);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   ФОРМА ШВИДКОГО ДОДАВАННЯ ТОВАРУ (сценарій B, ТЗ 13.2)
+   ═══════════════════════════════════════════════════════════════════════════ */
+.quick-add-barcode {
+  background: var(--c-surface-alt);
+  padding: 10px var(--gap);
+  border-radius: var(--r);
+  font-family: monospace;
+  font-size: 1rem;
+  color: var(--c-muted);
+  letter-spacing: 2px;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   СКАНЕР (камера)
+   ═══════════════════════════════════════════════════════════════════════════ */
+#scanner-container {
+  position: fixed;
+  top: var(--header-h);
+  left: 0;
+  right: 0;
+  height: 280px;
+  background: #000;
+  z-index: 200;
+  overflow: hidden;
+  transition: height var(--t);
+}
+
+#scanner-container video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.scanner-frame {
+  position: absolute;
+  inset: 28px;
+  border: 2px solid rgba(255,255,255,.7);
+  border-radius: var(--r);
+  box-shadow: 0 0 0 9999px rgba(0,0,0,.45);
+  pointer-events: none;
+}
+
+.scanner-frame::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  height: 2px;
+  background: rgba(255,80,80,.8);
+  transform: translateY(-50%);
+}
+
+#scanner-container[hidden] { display: none; }
+
+/* Прихований input для HID-сканера (ТЗ 12.3) */
+#barcode-input {
+  position: absolute;
+  opacity: 0;
+  width: 1px;
+  height: 1px;
+  pointer-events: none;
+  left: -9999px;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   СПИСОК ПРИХОДУ ТОВАРІВ
+   ═══════════════════════════════════════════════════════════════════════════ */
+.receipt-item-row {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  align-items: center;
+  padding: 10px var(--gap);
+  gap: var(--gap);
+  border-bottom: 1px solid var(--c-border);
+  background: var(--c-surface);
+}
+
+.receipt-item-row:last-child { border-bottom: none; }
+.receipt-item-row .item-name { font-size: .9rem; font-weight: 500; }
+.receipt-item-row .item-qty  { font-weight: 700; white-space: nowrap; }
+.receipt-item-row .item-price { font-size:.85rem; color:var(--c-muted); white-space:nowrap; }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   ЛОАДЕР
+   ═══════════════════════════════════════════════════════════════════════════ */
+.spinner {
+  width: 32px;
+  height: 32px;
+  border: 3px solid rgba(0,0,0,.1);
+  border-top-color: var(--c-primary);
+  border-radius: 50%;
+  animation: spin .7s linear infinite;
+  flex-shrink: 0;
+}
+
+.spinner--sm {
+  width: 20px;
+  height: 20px;
+  border-width: 2px;
+}
+
+.spinner--white { border-color: rgba(255,255,255,.3); border-top-color: #fff; }
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.loading-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(255,255,255,.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 50;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   УТИЛІТИ
+   ═══════════════════════════════════════════════════════════════════════════ */
+.sr-only { position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0; }
+.hidden        { display: none !important; }
+.flex          { display: flex; }
+.flex-col      { flex-direction: column; }
+.flex-1        { flex: 1; }
+.flex-wrap     { flex-wrap: wrap; }
+.items-center  { align-items: center; }
+.items-end     { align-items: flex-end; }
+.justify-between { justify-content: space-between; }
+.justify-center  { justify-content: center; }
+.gap-sm        { gap: var(--gap-sm); }
+.gap           { gap: var(--gap); }
+.gap-lg        { gap: var(--gap-lg); }
+.p             { padding: var(--gap); }
+.p-lg          { padding: var(--gap-lg); }
+.mt-auto       { margin-top: auto; }
+.w-full        { width: 100%; }
+.text-center   { text-align: center; }
+.text-right    { text-align: right; }
+.text-muted    { color: var(--c-muted); }
+.text-danger   { color: var(--c-danger); }
+.text-success  { color: var(--c-success); }
+.text-warning  { color: var(--c-warning); }
+.text-sm       { font-size: .875rem; }
+.text-xs       { font-size: .75rem; }
+.text-lg       { font-size: 1.1rem; }
+.text-xl       { font-size: 1.3rem; }
+.fw-bold       { font-weight: 700; }
+.fw-800        { font-weight: 800; }
+.truncate      { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.nowrap        { white-space: nowrap; }
+.divider       { height: 1px; background: var(--c-border); margin: var(--gap-sm) 0; }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   iOS SAFE AREAS
+   ═══════════════════════════════════════════════════════════════════════════ */
+@supports (padding: env(safe-area-inset-bottom)) {
+  .app-header {
+    padding-top: env(safe-area-inset-top);
+    height: calc(var(--header-h) + env(safe-area-inset-top));
+  }
+
+  .pos-payment-panel,
+  .form-screen {
+    padding-bottom: calc(var(--gap-lg) + env(safe-area-inset-bottom));
+  }
+}

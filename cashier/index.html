@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#1A237E">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>Каса</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="stylesheet" href="css/main.css">
+</head>
+<body>
+
+<div id="app">
+
+  <!-- ═══ SHARED HEADER ═══════════════════════════════════════════════════════ -->
+  <header class="app-header">
+    <button id="hdr-back"
+            class="btn-icon"
+            hidden
+            style="border-color:rgba(255,255,255,.3);color:#fff;background:transparent;flex-shrink:0"
+            aria-label="Назад">←</button>
+
+    <span id="hdr-shop"    class="header-shop"  hidden></span>
+    <span id="hdr-shift"   class="header-shift" hidden></span>
+    <span id="hdr-title"   style="font-weight:700;font-size:1.05rem" hidden></span>
+
+    <div class="header-space"></div>
+
+    <span id="hdr-cashier" class="header-seller" hidden></span>
+    <span id="scan-badge"  class="scan-badge"    hidden></span>
+    <div  id="sync-dot"    class="sync-dot"      hidden title="Синхронізація"></div>
+  </header>
+
+  <!-- ═══ MAIN (screens stack here) ══════════════════════════════════════════ -->
+  <main class="app-main">
+
+    <!-- Hidden HID focus target — exists outside screens so it persists -->
+    <input id="barcode-input"
+           type="text"
+           autocomplete="off"
+           inputmode="none"
+           tabindex="-1"
+           aria-hidden="true">
+
+    <!-- ─── SCREEN: LOGIN ───────────────────────────────────────────────────── -->
+    <div id="screen-login" class="screen is-active">
+      <div class="login-logo">Каса</div>
+      <p class="login-prompt">Введіть PIN-код</p>
+
+      <div class="pin-dots">
+        <div class="pin-dot"></div>
+        <div class="pin-dot"></div>
+        <div class="pin-dot"></div>
+        <div class="pin-dot"></div>
+        <div class="pin-dot"></div>
+        <div class="pin-dot"></div>
+      </div>
+
+      <p id="login-error" class="login-error" role="alert"></p>
+
+      <div class="pin-keyboard" role="group" aria-label="Цифрова клавіатура">
+        <button class="pin-key" data-value="1">1</button>
+        <button class="pin-key" data-value="2">2</button>
+        <button class="pin-key" data-value="3">3</button>
+        <button class="pin-key" data-value="4">4</button>
+        <button class="pin-key" data-value="5">5</button>
+        <button class="pin-key" data-value="6">6</button>
+        <button class="pin-key" data-value="7">7</button>
+        <button class="pin-key" data-value="8">8</button>
+        <button class="pin-key" data-value="9">9</button>
+        <button class="pin-key pin-key--empty" aria-hidden="true" tabindex="-1"></button>
+        <button class="pin-key" data-value="0">0</button>
+        <button class="pin-key pin-key--backspace" data-value="del" aria-label="Видалити">⌫</button>
+      </div>
+    </div>
+
+    <!-- ─── SCREEN: SHIFT OPEN ─────────────────────────────────────────────── -->
+    <div id="screen-shift-open" class="screen">
+      <div class="form-screen">
+        <h1 class="form-screen-title">Відкрити зміну</h1>
+
+        <form id="form-shift-open" class="flex flex-col gap" novalidate>
+          <div class="form-group">
+            <label class="form-label" for="shift-shop">Магазин</label>
+            <select id="shift-shop" class="form-select" required></select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="shift-meter-start">Показник лічильника</label>
+            <input id="shift-meter-start"
+                   class="form-input"
+                   type="number"
+                   min="0"
+                   step="1"
+                   required
+                   placeholder="0"
+                   inputmode="numeric">
+          </div>
+
+          <button type="submit" class="btn btn--primary btn--full btn--large">
+            Відкрити зміну
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <!-- ─── SCREEN: POS ─────────────────────────────────────────────────────── -->
+    <div id="screen-pos" class="screen">
+
+      <!-- Camera overlay (fixed, shown only when camera active) -->
+      <div id="scanner-container" hidden>
+        <video id="scanner-video" autoplay playsinline muted></video>
+        <div class="scanner-frame" aria-hidden="true"></div>
+      </div>
+
+      <!-- Two-panel POS layout -->
+      <div class="pos-layout flex-1" style="min-height:0">
+
+        <!-- Cart panel -->
+        <div class="pos-cart-panel">
+          <div id="cart-list" class="cart-list">
+            <div class="cart-empty">
+              <div class="cart-empty-icon">🛒</div>
+              <span>Відскануйте товар або штрихкод</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Payment panel -->
+        <div class="pos-payment-panel">
+          <div class="cart-total-row">
+            <span class="text-muted text-sm">Позицій</span>
+            <span id="cart-item-count" class="fw-bold">0 шт.</span>
+          </div>
+
+          <div class="cart-total-row grand-total">
+            <span>Разом</span>
+            <span id="cart-total-amount">0,00 ₴</span>
+          </div>
+
+          <div class="payment-type-group">
+            <button id="pay-cash" class="payment-btn is-active" type="button">Готівка</button>
+            <button id="pay-card" class="payment-btn"           type="button">Картка</button>
+          </div>
+
+          <button id="btn-checkout" class="btn-checkout w-full" type="button" disabled>
+            Провести
+          </button>
+        </div>
+      </div>
+
+      <!-- Action bar: secondary operations -->
+      <div class="pos-action-bar" role="toolbar" aria-label="Дії">
+        <button id="btn-return-mode"    class="action-btn action-btn--warn" type="button">↩ Повернення</button>
+        <button id="btn-go-expenses"    class="action-btn"                  type="button">Витрата</button>
+        <button id="btn-go-receipt"     class="action-btn"                  type="button">Прихід</button>
+        <button id="btn-go-close-shift" class="action-btn"                  type="button">Закрити зміну</button>
+      </div>
+    </div>
+
+    <!-- ─── SCREEN: SHIFT CLOSE ─────────────────────────────────────────────── -->
+    <div id="screen-shift-close" class="screen">
+      <div class="form-screen">
+        <h1 class="form-screen-title">Закрити зміну</h1>
+        <p class="form-screen-subtitle">Перерахуйте готівку самостійно</p>
+
+        <form id="form-shift-close" class="flex flex-col gap" novalidate>
+
+          <!--
+            СЛІПИЙ ВВІД ГОТІВКИ (ТЗ 16.2):
+            Касир бачить ТІЛЬКИ це поле — без очікуваної суми, підсумків
+            та різниці. Мета: незалежна перевірка, яка не спотворюється
+            попереднім знанням «правильної» суми.
+          -->
+          <div class="blind-cash-note">
+            Порахуйте всю готівку в касі та введіть суму нижче.<br>
+            Системні дані не відображаються навмисно.
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="shift-cash-blind">Готівка в касі, ₴</label>
+            <input id="shift-cash-blind"
+                   class="form-input form-input--xl"
+                   type="number"
+                   min="0"
+                   step="0.01"
+                   required
+                   placeholder="0.00"
+                   inputmode="decimal"
+                   autocomplete="off">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="shift-meter-end">Показник лічильника</label>
+            <input id="shift-meter-end"
+                   class="form-input"
+                   type="number"
+                   min="0"
+                   step="1"
+                   required
+                   placeholder="0"
+                   inputmode="numeric">
+          </div>
+
+          <button type="submit" class="btn btn--danger btn--full btn--large">
+            Закрити зміну
+          </button>
+          <button type="button" id="btn-shift-close-back" class="btn btn--ghost btn--full">
+            Назад
+          </button>
+        </form>
+
+        <!-- Result — shown after close; form hidden -->
+        <div id="shift-close-result" hidden class="flex flex-col gap text-center">
+          <div class="banner banner--success">Зміну успішно закрито</div>
+
+          <div class="card p">
+            <p class="text-muted text-sm" style="margin-bottom:6px">Нараховано зарплату</p>
+            <p id="shift-salary-amount" class="fw-800 text-xl"></p>
+          </div>
+
+          <button id="btn-after-close" class="btn btn--primary btn--full btn--large">
+            OK
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ─── SCREEN: EXPENSES ─────────────────────────────────────────────────── -->
+    <div id="screen-expenses" class="screen">
+      <div class="form-screen">
+        <h1 class="form-screen-title">Витрата</h1>
+
+        <form id="form-expenses" class="flex flex-col gap" novalidate>
+          <div class="form-group">
+            <label class="form-label" for="expense-category">Категорія</label>
+            <select id="expense-category" class="form-select" required></select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="expense-amount">
+              Сума, ₴ <span style="color:var(--c-danger)">*</span>
+            </label>
+            <input id="expense-amount"
+                   class="form-input form-input--xl"
+                   type="number"
+                   min="0.01"
+                   step="0.01"
+                   required
+                   placeholder="0.00"
+                   inputmode="decimal">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="expense-desc">Опис (необов'язково)</label>
+            <input id="expense-desc"
+                   class="form-input"
+                   type="text"
+                   placeholder="Деталі витрати"
+                   autocomplete="off">
+          </div>
+
+          <button type="submit" class="btn btn--primary btn--full btn--large">
+            Зберегти витрату
+          </button>
+          <button type="button" id="btn-expenses-back" class="btn btn--ghost btn--full">
+            Назад
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <!-- ─── SCREEN: RECEIPT ──────────────────────────────────────────────────── -->
+    <div id="screen-receipt" class="screen">
+      <div class="form-screen">
+        <h1 class="form-screen-title">Прихід товару</h1>
+
+        <!-- Mode toggle -->
+        <div class="payment-type-group">
+          <button type="button" id="rec-toggle-scan"   class="payment-btn is-active">Сканер</button>
+          <button type="button" id="rec-toggle-manual" class="payment-btn">Ручний ввід</button>
+        </div>
+
+        <form id="form-receipt" class="flex flex-col gap" novalidate>
+
+          <div class="form-group">
+            <label class="form-label" for="rec-barcode">Штрихкод</label>
+            <input id="rec-barcode"
+                   class="form-input"
+                   type="text"
+                   required
+                   readonly
+                   autocomplete="off"
+                   inputmode="numeric"
+                   placeholder="Відскануйте або оберіть ручний ввід">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="rec-name">
+              Назва <span style="color:var(--c-danger)">*</span>
+            </label>
+            <input id="rec-name" class="form-input" type="text" required autocomplete="off">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="rec-group">Група</label>
+            <select id="rec-group" class="form-select" required></select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="rec-subgroup">Підгрупа</label>
+            <input id="rec-subgroup" class="form-input" type="text" autocomplete="off">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="rec-supplier">Постачальник</label>
+            <input id="rec-supplier" class="form-input" type="text" autocomplete="off">
+          </div>
+
+          <div class="flex gap">
+            <div class="form-group flex-1">
+              <label class="form-label" for="rec-qty">
+                Кількість <span style="color:var(--c-danger)">*</span>
+              </label>
+              <input id="rec-qty"
+                     class="form-input"
+                     type="number"
+                     min="0.001"
+                     step="0.001"
+                     required
+                     inputmode="decimal">
+            </div>
+            <div class="form-group flex-1">
+              <label class="form-label" for="rec-buy">Закупка, ₴</label>
+              <input id="rec-buy"
+                     class="form-input"
+                     type="number"
+                     min="0"
+                     step="0.01"
+                     inputmode="decimal">
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="rec-sell">
+              Ціна продажу, ₴ <span style="color:var(--c-danger)">*</span>
+            </label>
+            <input id="rec-sell"
+                   class="form-input"
+                   type="number"
+                   min="0.01"
+                   step="0.01"
+                   required
+                   inputmode="decimal">
+          </div>
+
+          <!-- МРЦ — тільки для тютюну; label = «МРЦ на пачці» -->
+          <div id="rec-mrc-field" class="form-group" hidden>
+            <label class="form-label" for="rec-mrc">МРЦ на пачці, ₴</label>
+            <input id="rec-mrc"
+                   class="form-input"
+                   type="number"
+                   min="0"
+                   step="0.01"
+                   inputmode="decimal">
+          </div>
+
+          <!-- МРЦ попередження -->
+          <div id="rec-warn-tobacco" class="banner banner--warning" hidden role="alert">
+            ⚠ Ціна продажу перевищує МРЦ на пачці більш ніж на 5%
+          </div>
+          <div id="rec-warn-alcohol" class="banner banner--danger" hidden role="alert">
+            ⚠ Ціна продажу нижче мінімальної роздрібної ціни (МРЦ)
+          </div>
+
+          <!-- Часткове повернення постачальнику -->
+          <label class="flex items-center gap-sm" style="cursor:pointer;font-size:.95rem">
+            <input id="rec-rejected" type="checkbox">
+            Повернення постачальнику (часткове)
+          </label>
+          <div id="rec-rejection-field" class="form-group" hidden>
+            <label class="form-label" for="rec-rej-qty">Кількість повернення</label>
+            <input id="rec-rej-qty"
+                   class="form-input"
+                   type="number"
+                   min="0"
+                   step="0.001"
+                   inputmode="decimal">
+          </div>
+
+          <button type="submit" class="btn btn--primary btn--full btn--large">
+            Зберегти прихід
+          </button>
+          <button type="button" id="btn-receipt-back" class="btn btn--ghost btn--full">
+            Назад
+          </button>
+        </form>
+      </div>
+    </div>
+
+  </main><!-- /.app-main -->
+</div><!-- /#app -->
+
+<script type="module" src="js/app.js"></script>
+<script>
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('./sw.js');
+  }
+</script>
+</body>
+</html>
