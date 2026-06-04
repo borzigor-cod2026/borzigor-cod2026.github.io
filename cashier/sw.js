@@ -35,12 +35,7 @@ const SHELL = [
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME)
-      .then(cache => cache.addAll(
-        // Ігноруємо помилки для файлів Stage 5 що ще не існують
-        SHELL.map(url =>
-          cache.add(url).catch(() => { /* файл ще не існує — пропустити */ })
-        )
-      ))
+      .then(cache => Promise.allSettled(SHELL.map(url => cache.add(url))))
       .then(() => self.skipWaiting())
   );
 });
