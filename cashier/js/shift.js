@@ -8,8 +8,8 @@ import { generateUUID, nowISO, formatCurrency }            from './utils.js';
 import { syncPending }                                     from './sync.js';
 
 const SHOPS = [
-  { id: 'shop_1', name: 'Магазин №1' },
-  { id: 'shop_2', name: 'Магазин №2' },
+  { id: 'SHOP_1', name: 'Магазин №1' },
+  { id: 'SHOP_2', name: 'Магазин №2' },
 ];
 
 // ─────────────────────────────────────────────────────────────────────────────

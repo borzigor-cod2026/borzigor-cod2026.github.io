@@ -75,7 +75,7 @@ export async function updatePOSHeader() {
     const cashierEl  = document.getElementById('hdr-cashier');
     const shiftEl    = document.getElementById('hdr-shift');
 
-    if (shopEl)    { shopEl.textContent    = session.shop_id === 'shop_1' ? 'Магазин №1' : 'Магазин №2'; shopEl.hidden = false; }
+    if (shopEl)    { shopEl.textContent    = session.shop_id === 'SHOP_1' ? 'Магазин №1' : 'Магазин №2'; shopEl.hidden = false; }
     if (cashierEl) { cashierEl.textContent = session.name;                                                cashierEl.hidden = false; }
     if (shiftEl && shift) {
       const d = new Date(shift.opened_at);
