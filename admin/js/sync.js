@@ -34,7 +34,7 @@ export async function syncPending() {
     const url  = `${_gasUrl}?api_version=${API_VERSION}&api_signature=${sig}`;
 
     let res;
-    try { res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body }); }
+    try { res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body }); }
     catch (_) { return; }
 
     if (!res.ok) return;
@@ -80,7 +80,7 @@ export async function refreshProductCache() {
   try {
     const body = JSON.stringify({ type: 'get_products', shop_id: _shopId });
     const sig  = await computeHMAC(body, _apiSecret);
-    const res  = await fetch(`${_gasUrl}?api_version=${API_VERSION}&api_signature=${sig}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body });
+    const res  = await fetch(`${_gasUrl}?api_version=${API_VERSION}&api_signature=${sig}`, { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body });
     const json = await res.json();
     if (json.success && Array.isArray(json.products)) await upsertProducts(json.products);
   } catch (_) {}
@@ -91,7 +91,7 @@ export async function refreshEmployeeCache() {
   try {
     const body = JSON.stringify({ type: 'get_employees', shop_id: _shopId });
     const sig  = await computeHMAC(body, _apiSecret);
-    const res  = await fetch(`${_gasUrl}?api_version=${API_VERSION}&api_signature=${sig}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body });
+    const res  = await fetch(`${_gasUrl}?api_version=${API_VERSION}&api_signature=${sig}`, { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body });
     const json = await res.json();
     if (json.success && Array.isArray(json.employees)) await upsertEmployees(json.employees);
   } catch (_) {}

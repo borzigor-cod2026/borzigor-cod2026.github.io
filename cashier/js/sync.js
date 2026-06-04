@@ -168,7 +168,7 @@ export async function refreshProductCache() {
     const url  = `${_gasUrl}?api_version=${API_VERSION}&api_signature=${sig}`;
     const res  = await fetch(url, {
       method:  'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'text/plain' },
       body,
     });
     const json = await res.json();
@@ -189,7 +189,7 @@ export async function refreshEmployeeCache() {
     const url  = `${_gasUrl}?api_version=${API_VERSION}&api_signature=${sig}`;
     const res  = await fetch(url, {
       method:  'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'text/plain' },
       body,
     });
     const json = await res.json();

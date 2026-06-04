@@ -41,7 +41,7 @@ export async function login(pin) {
   try {
     res = await fetch(url, {
       method:  'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'text/plain' },
       body,
     });
   } catch (_) {
