@@ -48,12 +48,22 @@ export function initPOS() {
   document.getElementById('btn-checkout')?.addEventListener('click', _submitSale);
   document.getElementById('btn-return-mode')?.addEventListener('click', _toggleReturn);
 
+  document.getElementById('btn-manual-barcode')?.addEventListener('click', _openManualBarcode);
+
   document.getElementById('btn-go-expenses')?.addEventListener('click',
     () => import('./app.js').then(m => m.showScreen('expenses')));
   document.getElementById('btn-go-receipt')?.addEventListener('click',
     () => import('./app.js').then(m => m.showScreen('receipt')));
   document.getElementById('btn-go-close-shift')?.addEventListener('click',
     () => import('./app.js').then(m => m.showScreen('shift-close')));
+
+  document.addEventListener('keydown', e => {
+    if (e.key !== 'F2') return;
+    if (!document.getElementById('screen-pos')?.classList.contains('is-active')) return;
+    if (_isModalOpen()) return;
+    e.preventDefault();
+    _openManualBarcode();
+  });
 
   window.addEventListener('online',  _updateSyncDot);
   window.addEventListener('offline', _updateSyncDot);
@@ -62,6 +72,30 @@ export function initPOS() {
   _renderCart([]);
   _updateSyncDot();
   updatePOSHeader();
+
+  // ─── ФОКУС BARCODE-INPUT ─────────────────────────────────────────────────────
+  // На мобільних браузерах (iOS Safari) keyboard-події надходять тільки
+  // коли текстовий input у фокусі. Підтримуємо фокус постійно.
+
+  const _bci = document.getElementById('barcode-input');
+
+  function _refocusBarcode() {
+    if (!document.getElementById('screen-pos')?.classList.contains('is-active')) return;
+    if (_isModalOpen()) return;
+    _bci?.focus({ preventScroll: true });
+  }
+
+  // 1. Після будь-якого кліку/тапу на POS-екрані повернути фокус
+  document.getElementById('screen-pos')
+    ?.addEventListener('pointerup', () => setTimeout(_refocusBarcode, 50));
+
+  // 2. Якщо input втратив фокус (наприклад після кліку на кнопку) — повернути
+  _bci?.addEventListener('blur', () => setTimeout(_refocusBarcode, 50));
+
+  // 3. При поверненні з фону (вкладки, сон пристрою)
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden) _refocusBarcode();
+  });
 }
 
 // ─── ОНОВЛЕННЯ ЗАГОЛОВКУ ─────────────────────────────────────────────────────
@@ -354,10 +388,49 @@ function _stockDialog(product) {
 
 function _isModalOpen() {
   return !!(
-    document.getElementById('quick-add-overlay') ||
-    document.getElementById('pos-price-dialog')  ||
-    document.getElementById('pos-stock-dialog')
+    document.getElementById('quick-add-overlay')        ||
+    document.getElementById('pos-price-dialog')         ||
+    document.getElementById('pos-stock-dialog')         ||
+    document.getElementById('pos-manual-barcode-dialog')
   );
+}
+
+function _openManualBarcode() {
+  const ov  = _overlay('pos-manual-barcode-dialog');
+  const box = _modal();
+
+  box.appendChild(el('div', 'modal__title', 'Введіть штрихкод вручну'));
+
+  const body  = el('div', 'modal__body');
+  const input = document.createElement('input');
+  input.type        = 'text';
+  input.className   = 'form-input';
+  input.placeholder = 'Штрихкод…';
+  input.inputMode   = 'numeric';
+  input.autocomplete = 'off';
+  body.appendChild(input);
+
+  const actions = el('div', 'modal__actions');
+  const cancel  = el('button', 'btn btn--ghost',    'Скасувати');
+  const confirm = el('button', 'btn btn--primary',  'Пошук');
+
+  async function _submit() {
+    const val = input.value.trim();
+    if (!val) return;
+    ov.remove();
+    document.getElementById('barcode-input')?.focus({ preventScroll: true });
+    await _handleBarcode(val);
+  }
+
+  input.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); _submit(); } });
+  cancel .addEventListener('click', () => { ov.remove(); document.getElementById('barcode-input')?.focus({ preventScroll: true }); });
+  confirm.addEventListener('click', _submit);
+
+  actions.append(cancel, confirm);
+  box.append(body, actions);
+  ov.appendChild(box);
+  document.body.appendChild(ov);
+  input.focus();
 }
 
 function _overlay(id) {
