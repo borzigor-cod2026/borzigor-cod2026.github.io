@@ -63,7 +63,7 @@ export function showScreen(name) {
 
   // Після будь-якого переходу — повернути фокус на barcode-input
   // Затримка 60 мс щоб браузер завершив перехід фокусу в попередньому екрані
-  setTimeout(() => document.getElementById('barcode-input')?.focus(), 60);
+  setTimeout(() => document.getElementById('barcode-input')?.focus({ preventScroll: true }), 60);
 }
 
 // ─── ЗАГОЛОВОК ────────────────────────────────────────────────────────────────
@@ -198,6 +198,10 @@ async function _cleanupStaleShifts() {
 async function _navigateAfterAuth() {
   const session = getPublicSession();
   if (!session) { showScreen('login'); return; }
+  // Refresh catalogues right after login so the cashier always has fresh data.
+  if (navigator.onLine) {
+    await Promise.allSettled([refreshProductCache(), refreshEmployeeCache()]);
+  }
   // Always go through shift-open so the cashier confirms shop and meter.
   // If an active shift exists it will pre-fill those fields (see shift.js).
   showScreen('shift-open');
