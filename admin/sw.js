@@ -2,7 +2,7 @@
 //  admin/sw.js — Service Worker PWA адміністратора
 // ─────────────────────────────────────────────────────────────────────────────
 
-const CACHE_NAME   = 'admin-v4';
+const CACHE_NAME   = 'admin-v5';
 const GAS_HOSTNAME = 'script.google.com';
 
 const SHELL = [
@@ -53,7 +53,8 @@ self.addEventListener('fetch', (event) => {
       if (cached) return cached;
       return fetch(event.request).then(response => {
         if (response.ok && response.type === 'basic' && url.origin === self.location.origin) {
-          caches.open(CACHE_NAME).then(c => c.put(event.request, response.clone()));
+          const toCache = response.clone();
+          caches.open(CACHE_NAME).then(c => c.put(event.request, toCache));
         }
         return response;
       }).catch(() => {
