@@ -83,8 +83,8 @@ function setupSheets() {
   ]);
 
   _makeSheet_(ss, SHEET_ADMIN_CASH, [
-    'UUID_Операції', 'Магазин_ID', 'Дата', 'Тип_Операції',
-    'Сума', 'Призначення', 'Від_Кого', 'Підтвердив', 'Статус',
+    'UUID_Операції', 'Дата', 'Тип_Операції', 'Сума', 'Спосіб_Оплати',
+    'Магазин', 'Категорія', 'Опис', 'Створив',
   ]);
 
   _makeSheet_(ss, SHEET_INVENTORY, [
@@ -233,6 +233,10 @@ function _fillSettingsData_(sheet) {
     ['CURRENCY_SYMBOL',        '₴',                              'Символ валюти'],
     ['PRODUCT_GROUPS',         JSON.stringify(productGroups),     'Групи товарів (JSON-масив)'],
     ['PRODUCT_SUBGROUPS',      JSON.stringify(productSubgroups),  'Підгрупи товарів (JSON-обʼєкт)'],
+    ['EXPENSE_CATEGORIES',     JSON.stringify([
+      'Господарські витрати', 'Пакети та пакування', 'Оренда',
+      'Комунальні послуги', 'Повернення постачальнику', 'Інше',
+    ]),                                                            'Категорії витрат касира (JSON-масив)'],
   ];
 
   // Очистити рядки даних (рядок 1 — заголовок, залишаємо)
@@ -242,7 +246,7 @@ function _fillSettingsData_(sheet) {
   sheet.getRange(2, 1, settings.length, 3).setValues(settings);
 
   // ── МРЦ-секція ────────────────────────────────────────────────────────────
-  const mrcRow = settings.length + 3;  // рядок 14 при 11 налаштуваннях
+  const mrcRow = settings.length + 3;  // рядок 15 при 12 налаштуваннях
 
   sheet.getRange(mrcRow, 1, 1, 3).merge()
     .setValue('МРЦ НА АЛКОГОЛЬ')
@@ -301,7 +305,9 @@ function _fmtSales_(ss) {
   const s = ss.getSheetByName(SHEET_SALES);
   if (!s) return;
   s.getRange('D:D').setNumberFormat(DATETIME_FORMAT);
-  s.getRange('J:L').setNumberFormat(CURRENCY_FORMAT);
+  s.getRange('J:J').setNumberFormat('#,##0.00');  // Ціна_Продажі
+  s.getRange('K:K').setNumberFormat('#,##0.00');  // Ціна_Закупки
+  s.getRange('L:L').setNumberFormat('#,##0.00');  // Сума
   s.getRange('M2:M5000').setDataValidation(makeListRule_(['Готівка', 'Картка']));
   s.getRange('P2:P5000').setDataValidation(makeListRule_(['pending', 'synced', 'error', 'conflict']));
   setColumnWidths_(s, [280, 80, 280, 150, 220, 120, 260, 140, 80, 110, 110, 110, 90, 150, 90, 100]);
@@ -329,9 +335,12 @@ function _fmtExpenses_(ss) {
 function _fmtAdminCash_(ss) {
   const s = ss.getSheetByName(SHEET_ADMIN_CASH);
   if (!s) return;
-  s.getRange('C:C').setNumberFormat(DATETIME_FORMAT);
-  s.getRange('E:E').setNumberFormat(CURRENCY_FORMAT);
-  setColumnWidths_(s, [280, 80, 150, 160, 110, 220, 150, 150, 120]);
+  s.getRange('B:B').setNumberFormat(DATETIME_FORMAT);
+  s.getRange('D:D').setNumberFormat(CURRENCY_FORMAT);
+  s.getRange('C2:C2000').setDataValidation(makeListRule_(['Прихід', 'Витрата']));
+  s.getRange('E2:E2000').setDataValidation(makeListRule_(['Готівка', 'Безнал']));
+  s.getRange('F2:F2000').setDataValidation(makeListRule_(['КРЕС', 'Киоск ринок', 'Загальне']));
+  setColumnWidths_(s, [280, 150, 110, 110, 110, 150, 200, 300, 150]);
 }
 
 function _fmtInventory_(ss) {
@@ -462,12 +471,12 @@ function updateMrcTableHeaders() {
   const sheet = ss.getSheetByName(SHEET_SETTINGS);
   if (!sheet) throw new Error('Аркуш «Налаштування» не знайдено. Запустіть setupSheets().');
 
-  // Рядки МРЦ-таблиці: header = 16, дані = 17–20
-  // (визначено структурою _fillSettingsData_: 11 налаштувань + 3 рядки зазору = рядок 14,
-  //  +2 = рядок 16 для заголовка стовпців, +3..+6 = рядки 17–20 для даних)
-  sheet.getRange(16, 2).setValue('Ціна за літр (₴/л)');
+  // Рядки МРЦ-таблиці: header = 17, дані = 18–21
+  // (визначено структурою _fillSettingsData_: 12 налаштувань + 3 рядки зазору = рядок 15,
+  //  +2 = рядок 17 для заголовка стовпців, +3..+6 = рядки 18–21 для даних)
+  sheet.getRange(17, 2).setValue('Ціна за літр (₴/л)');
 
-  sheet.getRange(17, 2, 4, 1).setValues([
+  sheet.getRange(18, 2, 4, 1).setValues([
     [178.80],   // Горілка:    89,40 ÷ 0,5  = 178,80 ₴/л
     [ 90.00],   // Вино:       67,50 ÷ 0,75 =  90,00 ₴/л
     [218.00],   // Шампанське: 163,50 ÷ 0,75 = 218,00 ₴/л
@@ -533,7 +542,8 @@ function fixAllFormats() {
     sett.getRange('B2:B30').setNumberFormat('@');             // скидання: текст для всього діапазону
     sett.getRange('B5') .setNumberFormat('0,00%');            // DEFAULT_MARKUP_ALCOHOL → 15,00%
     sett.getRange('B6') .setNumberFormat('#,##0');            // ENERGY_LIMIT_KWT → ціле число
-    sett.getRange('B17:B20').setNumberFormat('# ##0.00');     // МРЦ за літр → 178,80 (без ₴, заголовок вже містить ₴/л)
+    sett.getRange('B16').setNumberFormat(DATE_FORMAT);        // MRC_UPDATED — відновити після '@' скидання
+    sett.getRange('B18:B21').setNumberFormat('# ##0.00');     // МРЦ за літр → 178,80 (без ₴, заголовок вже містить ₴/л)
   }
 
   // ══════════════════════════════════════════════════════════════════════════

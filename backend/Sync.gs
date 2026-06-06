@@ -137,7 +137,7 @@ function appendSale_(op, shopId) {
     'Сума':                 Number(op.total)          || 0,
     'Тип_Оплати':           op.payment_type  || 'Готівка',
     'Продавець':            op.seller        || '',
-    'Повернення':           op.is_return     ? true : false,
+    'Повернення':           op.is_return === true ? 'TRUE' : 'FALSE',
     'Статус_Синхронізації': 'synced'
   }));
 
