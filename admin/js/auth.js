@@ -31,11 +31,14 @@ export async function login(pin) {
   if (!pin) return { success: false, error: 'PIN не може бути порожнім' };
   if (!navigator.onLine) return { success: false, error: 'Для входу в адмін-панель потрібне підключення до мережі' };
 
+  const gasUrl    = localStorage.getItem('admin_gasUrl')    ?? _gasUrl;
+  const apiSecret = localStorage.getItem('admin_apiSecret') ?? _apiSecret;
+
   const pinHash = await digestSHA256(String(pin));
 
   const body      = JSON.stringify({ type: 'verify_admin', pin_hash: pinHash });
-  const signature = await computeHMAC(body, _apiSecret);
-  const url       = `${_gasUrl}?api_version=${API_VERSION}&api_signature=${signature}`;
+  const signature = await computeHMAC(body, apiSecret);
+  const url       = `${gasUrl}?api_version=${API_VERSION}&api_signature=${signature}`;
 
   let res;
   try {
