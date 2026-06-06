@@ -32,7 +32,7 @@ function _render(inventories) {
 }
 
 function _buildCard(inv) {
-  const shopName = inv.shop_id === 'shop_1' ? 'Магазин №1' : 'Магазин №2';
+  const shopName = inv.shop_id === 'SHOP_1' ? 'Магазин №1' : 'Магазин №2';
   const card     = el('div', 'list-card');
   card.dataset.shiftId = inv.shift_id;
 

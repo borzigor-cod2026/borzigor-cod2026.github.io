@@ -10,18 +10,23 @@ import { apiCall, formatCurrency, formatDate, formatDateTime, el, qs, toast, set
 
 const SCREEN_ID = 'screen-reports';
 
+let _inited = false;
+
 // ─── ІНІЦІАЛІЗАЦІЯ ────────────────────────────────────────────────────────────
 
 export function initReports() {
   const form = qs('#report-filter-form');
   if (!form) return;
 
-  // Встановити дату за замовчуванням: сьогодні
+  // Встановити дату за замовчуванням: сьогодні (оновлюється при кожному відкритті таба)
   const today = new Date().toISOString().slice(0, 10);
   const dateFrom = qs('#rep-date-from');
   const dateTo   = qs('#rep-date-to');
   if (dateFrom && !dateFrom.value) dateFrom.value = today;
   if (dateTo   && !dateTo.value)   dateTo.value   = today;
+
+  if (_inited) return;
+  _inited = true;
 
   form.addEventListener('submit', async e => {
     e.preventDefault();
@@ -102,7 +107,7 @@ function _buildShiftRow(shift) {
     <td>
       <div class="fw-600">${formatDate(shift.opened_at)}</div>
       <div class="text-sm text-muted">${esc(shift.cashier ?? '')}</div>
-      <div class="text-xs text-muted">${esc(shift.shop_id === 'shop_1' ? 'Магазин №1' : 'Магазин №2')}</div>
+      <div class="text-xs text-muted">${esc(shift.shop_id === 'SHOP_1' ? 'Магазин №1' : 'Магазин №2')}</div>
     </td>
     <td class="text-right fw-700">${formatCurrency(shift.revenue    ?? 0)}</td>
     <td class="text-right">${formatCurrency(shift.cash      ?? 0)}</td>

@@ -37,7 +37,7 @@ function _buildRow(exp) {
 
   card.innerHTML = `
     <div class="list-card__header">
-      <span class="badge badge--neutral">${esc(exp.shop_id === 'shop_1' ? 'Магазин №1' : 'Магазин №2')}</span>
+      <span class="badge badge--neutral">${esc(exp.shop_id === 'SHOP_1' ? 'Магазин №1' : 'Магазин №2')}</span>
       <span class="list-card__time text-muted text-sm">${formatDateTime(exp.timestamp)}</span>
     </div>
     <div class="list-card__body">

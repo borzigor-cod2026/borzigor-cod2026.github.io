@@ -35,7 +35,7 @@ function _buildCard(emp) {
   const card = el('div', 'list-card salary-card');
   card.dataset.pinHash = emp.pin_hash;
 
-  const shopName = emp.shop_id === 'shop_1' ? 'Магазин №1' : 'Магазин №2';
+  const shopName = emp.shop_id === 'SHOP_1' ? 'Магазин №1' : 'Магазин №2';
   const debtCls  = (emp.debt ?? 0) > 0 ? 'text-danger fw-700' : 'text-success';
 
   card.innerHTML = `
