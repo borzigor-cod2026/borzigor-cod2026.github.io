@@ -59,9 +59,7 @@ function txComplete(tx) {
   return new Promise((res, rej) => { tx.oncomplete = res; tx.onerror = () => rej(tx.error); tx.onabort = () => rej(new Error('Transaction aborted')); });
 }
 
-// ─── ПРОДУКТИ (спільний код з cashier) ───────────────────────────────────────
-
-export { normalizeProduct } from '../js/db.js';
+// ─── ПРОДУКТИ ────────────────────────────────────────────────────────────────
 
 export async function findProductByBarcode(barcode) {
   const db      = await openDB();
