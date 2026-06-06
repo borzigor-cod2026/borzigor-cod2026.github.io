@@ -2,7 +2,7 @@
 //  admin/sw.js — Service Worker PWA адміністратора
 // ─────────────────────────────────────────────────────────────────────────────
 
-const CACHE_NAME   = 'admin-v3';
+const CACHE_NAME   = 'admin-v4';
 const GAS_HOSTNAME = 'script.google.com';
 
 const SHELL = [
