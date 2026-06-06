@@ -8,7 +8,26 @@
 //  і через doPost type: 'archive_month' (тільки від адміністратора)
 // ─────────────────────────────────────────────────────────────────────────────
 
+// Викликається через doPost (адмін). Вимагає поле month для підтвердження.
 function archiveMonth(payload) {
+  const monthKey = getSetting('CURRENT_MONTH') || currentMonthKey();
+  if (payload.month === undefined) {
+    return errorResponse(
+      `Підтвердіть місяць архівування: передайте поле month="${monthKey}" у запиті.`,
+      'month_confirmation_required'
+    );
+  }
+  if (String(payload.month) !== String(monthKey)) {
+    return errorResponse(
+      `Місяць не збігається: очікується "${monthKey}", отримано "${payload.month}". Перевірте CURRENT_MONTH у налаштуваннях.`,
+      'month_mismatch'
+    );
+  }
+  return archiveMonth_();
+}
+
+// Викликається тригером (1-го числа о 02:00). Без перевірки місяця.
+function archiveMonthTrigger() {
   return archiveMonth_();
 }
 

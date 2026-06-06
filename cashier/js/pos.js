@@ -255,7 +255,7 @@ async function _submitSale() {
       type:           'sale',
       shift_id:       shiftId,
       timestamp,
-      payment_type:   _paymentType,
+      payment_type:   _paymentType === 'cash' ? 'Готівка' : 'Картка',
       is_return:      returnMode,
       seller:         session.name,
       product_id:     item.productId,

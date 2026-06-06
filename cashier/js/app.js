@@ -2,7 +2,7 @@
 //  cashier/js/app.js — маршрутизатор екранів PWA касира
 // ─────────────────────────────────────────────────────────────────────────────
 
-import { configureSyncEngine, setupOnlineListener, refreshEmployeeCache, refreshProductCache } from './sync.js';
+import { configureSyncEngine, setupOnlineListener, refreshEmployeeCache, refreshProductCache, refreshSettingsCache } from './sync.js';
 import { login, logout, getPublicSession } from './auth.js';
 import { getAllShifts, clearShift } from './db.js';
 import { initScanner }          from './scanner.js';
@@ -113,8 +113,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // 1. Конфігурація движка синхронізації (ключі в localStorage задає адміністратор)
   configureSyncEngine({
-    gasUrl:    localStorage.getItem('gasUrl')    ?? 'https://script.google.com/macros/s/AKfycbxKvUd0aOrbb5EQU_xX117qX3Opnzs_jNK0JHjAX0HJkbb27h9TuieYRXSqxr5ThtNF/exec',
-    apiSecret: localStorage.getItem('apiSecret') ?? 'H1MNaT6RrBatEs6K22BsExhjczmHreLn',
+    gasUrl:    localStorage.getItem('gasUrl')    ?? '',
+    apiSecret: localStorage.getItem('apiSecret') ?? '',
     shopId:    localStorage.getItem('shopId')    ?? '',
   });
   setupOnlineListener();
@@ -131,7 +131,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   // 5. Початкова синхронізація — завантажити список касирів і товарів з GAS
   //    перед відображенням екрана входу (потребує shopId у localStorage)
   if (navigator.onLine) {
-    await Promise.allSettled([refreshEmployeeCache(), refreshProductCache()]);
+    await Promise.allSettled([refreshEmployeeCache(), refreshProductCache(), refreshSettingsCache()]);
   }
 
   // 6. Прибрати застарілі зміни (залишити найновішу, якщо є кілька)
@@ -200,7 +200,7 @@ async function _navigateAfterAuth() {
   if (!session) { showScreen('login'); return; }
   // Refresh catalogues right after login so the cashier always has fresh data.
   if (navigator.onLine) {
-    await Promise.allSettled([refreshProductCache(), refreshEmployeeCache()]);
+    await Promise.allSettled([refreshProductCache(), refreshEmployeeCache(), refreshSettingsCache()]);
   }
   // Always go through shift-open so the cashier confirms shop and meter.
   // If an active shift exists it will pre-fill those fields (see shift.js).

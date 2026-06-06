@@ -12,8 +12,8 @@ import { API_VERSION, CURRENCY_SYMBOL, LOCALE,
 //  Конфігурація зберігається в localStorage під ключами admin_gasUrl / admin_apiSecret.
 
 export async function apiCall(type, payload = {}) {
-  const gasUrl    = localStorage.getItem('admin_gasUrl')    ?? 'https://script.google.com/macros/s/AKfycbxKvUd0aOrbb5EQU_xX117qX3Opnzs_jNK0JHjAX0HJkbb27h9TuieYRXSqxr5ThtNF/exec';
-  const apiSecret = localStorage.getItem('admin_apiSecret') ?? 'H1MNaT6RrBatEs6K22BsExhjczmHreLn';
+  const gasUrl    = localStorage.getItem('admin_gasUrl')    ?? '';
+  const apiSecret = localStorage.getItem('admin_apiSecret') ?? '';
 
   if (!gasUrl || !apiSecret) throw new Error('GAS не налаштовано. Зверніться до розробника.');
   if (!navigator.onLine)     throw new Error('Немає підключення до мережі.');
@@ -90,8 +90,8 @@ export function setLoading(screenId, on) {
       scr.prepend(spinner);
     }
     spinner.hidden = false;
-  } else if (spinner) {
-    spinner.hidden = true;
+  } else {
+    spinner?.remove();
   }
 }
 

@@ -70,6 +70,48 @@ function doPost(e) {
       case 'verify_admin':
         return handleVerifyAdmin_(payload);
 
+      // ── Дашборд адміністратора (Admin.gs) ──
+      case 'get_dashboard':
+        return getDashboard_(payload);
+
+      // ── Каса адміністратора (Admin.gs) ──
+      case 'get_admin_cash':
+        return getAdminCash_(payload);
+
+      case 'create_admin_cash_entry':
+        return createAdminCashEntry_(payload);
+
+      case 'add_admin_cash_category':
+        return addAdminCashCategory_(payload);
+
+      // ── Товари (Admin.gs) ──
+      case 'get_new_products':
+        return getNewProducts_(payload);
+
+      case 'update_product':
+        return updateProduct_(payload);
+
+      // ── Інвентаризація (Admin.gs) ──
+      case 'get_inventories':
+        return getInventories_(payload);
+
+      // ── Витрати (Admin.gs) ──
+      case 'get_pending_expenses':
+        return getPendingExpenses_(payload);
+
+      case 'approve_expense':
+        return approveExpense_(payload);
+
+      case 'reject_expense':
+        return rejectExpense_(payload);
+
+      // ── Зарплата (Admin.gs) ──
+      case 'get_salary':
+        return getSalary_(payload);
+
+      case 'salary_payment':
+        return salaryPayment_(payload);
+
       default:
         return errorResponse('Невідомий тип операції: ' + type, 'unknown_type');
     }
@@ -101,8 +143,8 @@ function handleGetProducts_(payload) {
   const iActive    = hdr.indexOf('Активний');
 
   const products = rows
-    .filter(r => r[iShop] === shopId && r[iActive] === true)
-    .map(r => Object.fromEntries(hdr.map((h, j) => [h, r[j]])));
+    .filter(r => (shopId === 'all' || r[iShop] === shopId) && r[iActive] === true)
+    .map(r => normalizeProductRow_(hdr, r));
 
   return successResponse({ products, synced_at: nowISO() });
 }

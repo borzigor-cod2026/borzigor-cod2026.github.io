@@ -115,6 +115,77 @@
       <div id="product-list"></div>
     </div>
 
+    <!-- ─── SCREEN: CASH ─────────────────────────────────────────────── -->
+    <div id="screen-cash" class="screen">
+
+      <!-- Поточний баланс -->
+      <div style="padding:var(--gap);border-bottom:1px solid var(--border-color)">
+        <div class="section-title" style="margin-bottom:4px">Баланс каси</div>
+        <div id="cash-balance" class="cash-balance">—</div>
+      </div>
+
+      <!-- Форма нового запису -->
+      <div style="padding:var(--gap)">
+        <form id="cash-entry-form" novalidate>
+
+          <div style="display:flex;gap:var(--gap-sm);margin-bottom:var(--gap-sm)">
+            <div class="form-group" style="flex:1">
+              <label class="form-label" for="cash-type">Тип</label>
+              <select id="cash-type" class="form-select">
+                <option value="Прихід">Прихід</option>
+                <option value="Витрата">Витрата</option>
+              </select>
+            </div>
+            <div class="form-group" style="flex:1">
+              <label class="form-label" for="cash-payment">Оплата</label>
+              <select id="cash-payment" class="form-select">
+                <option value="Готівка">Готівка</option>
+                <option value="Безнал">Безнал</option>
+              </select>
+            </div>
+          </div>
+
+          <div style="display:flex;gap:var(--gap-sm);margin-bottom:var(--gap-sm)">
+            <div class="form-group" style="flex:1">
+              <label class="form-label" for="cash-amount">Сума (₴)</label>
+              <input id="cash-amount" class="form-input" type="number" step="0.01" min="0.01"
+                     placeholder="0.00" inputmode="decimal">
+            </div>
+            <div class="form-group" style="flex:1">
+              <label class="form-label" for="cash-shop">Магазин</label>
+              <select id="cash-shop" class="form-select">
+                <option value="КРЕС">КРЕС</option>
+                <option value="Киоск ринок">Киоск ринок</option>
+                <option value="Загальне">Загальне</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-group" style="margin-bottom:var(--gap-sm)">
+            <label class="form-label">Категорія</label>
+            <div style="display:flex;gap:8px;align-items:center">
+              <select id="cash-category" class="form-select" style="flex:1"></select>
+              <button type="button" id="btn-add-cash-category"
+                      class="btn btn--outline btn--compact"
+                      title="Додати категорію">+</button>
+            </div>
+          </div>
+
+          <div class="form-group" style="margin-bottom:var(--gap)">
+            <label class="form-label" for="cash-desc">Опис</label>
+            <input id="cash-desc" class="form-input" type="text" placeholder="Необовʼязково">
+          </div>
+
+          <button type="submit" class="btn btn--primary" style="width:100%">Записати</button>
+        </form>
+      </div>
+
+      <!-- Журнал операцій -->
+      <div class="section-title" style="padding:0 var(--gap) var(--gap-sm)">Журнал</div>
+      <div id="cash-history" class="flex flex-col gap" style="padding:0 var(--gap) var(--gap)"></div>
+
+    </div>
+
     <!-- ─── SCREEN: REPORTS ────────────────────────────────────────────── -->
     <div id="screen-reports" class="screen">
 
@@ -166,6 +237,10 @@
     <button class="nav-tab" data-screen="products">
       <span class="nav-tab__icon">🏷️</span>
       <span>Товари</span>
+    </button>
+    <button class="nav-tab" data-screen="cash">
+      <span class="nav-tab__icon">🏦</span>
+      <span>Каса</span>
     </button>
     <button class="nav-tab" data-screen="reports">
       <span class="nav-tab__icon">📈</span>

@@ -83,17 +83,17 @@ function setupBackupTrigger() {
  */
 function setupArchiveTrigger() {
   ScriptApp.getProjectTriggers()
-    .filter(t => t.getHandlerFunction() === 'archiveMonth_')
+    .filter(t => t.getHandlerFunction() === 'archiveMonthTrigger')
     .forEach(t => ScriptApp.deleteTrigger(t));
 
-  ScriptApp.newTrigger('archiveMonth_')
+  ScriptApp.newTrigger('archiveMonthTrigger')
     .timeBased()
     .onMonthDay(1)
     .atHour(2)
     .inTimezone(KYIV_TZ)
     .create();
 
-  Logger.log('Тригер archiveMonth_ встановлено: 1-го числа кожного місяця о 02:00 Europe/Kiev');
+  Logger.log('Тригер archiveMonthTrigger встановлено: 1-го числа кожного місяця о 02:00 Europe/Kiev');
 }
 
 /** Встановлює обидва тригери за один виклик. */

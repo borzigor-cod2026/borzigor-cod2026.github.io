@@ -212,7 +212,7 @@ async function _submit() {
   } else {
     // Новий товар — додати до локального кешу щоб сканер міг його знайти
     await upsertProduct({
-      id:             `${barcode}_${sell}_${session.shop_id}`,
+      id:             `local_${generateUUID()}`,
       barcode,
       name,
       group,

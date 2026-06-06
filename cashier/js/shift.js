@@ -175,7 +175,7 @@ function _calcSalary(shift) {
   const gt     = shift.group_totals ?? {};
   const pct    = shift.pct          ?? {};
   for (const [group, total] of Object.entries(gt)) {
-    salary += (total * (pct[group] ?? 0)) / 100;
+    salary += total * (pct[group] ?? 0);
   }
   return Math.round(salary * 100) / 100;
 }

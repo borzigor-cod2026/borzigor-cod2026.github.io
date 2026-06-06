@@ -11,6 +11,7 @@ import {
   logSync,
   upsertProducts,
   upsertEmployees,
+  upsertSettings,
 } from './db.js';
 
 // ─── КОНФІГУРАЦІЯ ────────────────────────────────────────────────────────────
@@ -179,6 +180,25 @@ export async function refreshProductCache() {
   } catch (_) {
     // Офлайн або помилка — використовуємо старий кеш
   }
+}
+
+export async function refreshSettingsCache() {
+  if (!_gasUrl || !_shopId) return;
+  try {
+    const body = JSON.stringify({ type: 'get_settings', shop_id: _shopId });
+    const sig  = await computeHMAC(body, _apiSecret);
+    const url  = `${_gasUrl}?api_version=${API_VERSION}&api_signature=${sig}`;
+    const res  = await fetch(url, {
+      method:  'POST',
+      headers: { 'Content-Type': 'text/plain' },
+      body,
+    });
+    const json = await res.json();
+    if (json.success && json.settings && typeof json.settings === 'object') {
+      await upsertSettings(json.settings);
+      localStorage.setItem('settings_synced_at', json.synced_at ?? new Date().toISOString());
+    }
+  } catch (_) { /* Офлайн — залишаємо старий кеш */ }
 }
 
 export async function refreshEmployeeCache() {

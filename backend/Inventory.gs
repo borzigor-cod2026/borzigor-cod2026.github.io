@@ -14,7 +14,7 @@
  * updateStock_() визначено в Sync.gs (доступна з усіх файлів проекту).
  */
 function approveInventory(payload) {
-  const shiftId    = payload.inventory_shift_id;
+  const shiftId    = payload.inventory_shift_id || payload.shift_id;
   const shopId     = payload.shop_id  || '';
   const approvedBy = payload.approved_by || 'admin';
 

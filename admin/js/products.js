@@ -5,40 +5,105 @@
 import { PRODUCT_GROUPS }   from '../../shared/constants.js';
 import { apiCall, formatCurrency, el, qs, toast, setLoading, esc } from './utils.js';
 
-const SCREEN_ID   = 'screen-products';
+const SCREEN_ID = 'screen-products';
 
-let _allProducts  = [];
-let _newProducts  = [];
+// HID detection — same algorithm as cashier/js/scanner.js, camera-free
+const HID_SPEED_THRESH = 20;  // chars/s
+const HID_MIN_LEN      = 4;
+const HID_FLUSH_MS     = 80;
+
+let _allProducts = [];
+let _newProducts = [];
+let _inited      = false;
+
+let _buf      = '';
+let _bufStart = 0;
+let _hidTimer = null;
 
 // ─── ІНІЦІАЛІЗАЦІЯ ────────────────────────────────────────────────────────────
 
 export async function initProducts() {
+  if (!_inited) {
+    _inited = true;
+
+    qs('#product-search')?.addEventListener('input', e => {
+      _applySearch(e.target.value.trim());
+    });
+
+    document.addEventListener('keydown', _onHIDKeyDown);
+  }
+
   setLoading(SCREEN_ID, true);
   try {
     const [newRes, allRes] = await Promise.all([
       apiCall('get_new_products'),
       apiCall('get_products', { shop_id: 'all' }),
     ]);
-    _newProducts = newRes.products  ?? [];
-    _allProducts = allRes.products  ?? [];
+    _newProducts = newRes.products ?? [];
+    _allProducts = allRes.products ?? [];
 
     _renderNewProducts(_newProducts);
-    _renderProductList(_allProducts);
+    _applySearch(qs('#product-search')?.value.trim() ?? '');
   } catch (err) {
     toast(err.message, 'error');
   } finally {
     setLoading(SCREEN_ID, false);
   }
+}
 
-  // Пошук
-  qs('#product-search')?.addEventListener('input', e => {
-    const q = e.target.value.trim().toLowerCase();
-    _renderProductList(q
-      ? _allProducts.filter(p =>
-          p.name.toLowerCase().includes(q) || String(p.barcode).includes(q))
-      : _allProducts
-    );
-  });
+// ─── HID ДЕТЕКЦІЯ ─────────────────────────────────────────────────────────────
+
+function _onHIDKeyDown(e) {
+  if (!document.getElementById(SCREEN_ID)?.classList.contains('is-active')) return;
+
+  if (e.key === 'Enter') {
+    if (_buf.length >= HID_MIN_LEN) _flush();
+    else _clearBuf();
+    return;
+  }
+  if (e.key.length !== 1) return;
+  if (_buf.length === 0) _bufStart = performance.now();
+  _buf += e.key;
+  clearTimeout(_hidTimer);
+  _hidTimer = setTimeout(_flush, HID_FLUSH_MS);
+}
+
+function _flush() {
+  clearTimeout(_hidTimer);
+  const code    = _buf.trim();
+  const elapsed = (performance.now() - _bufStart) || 1;
+  const speed   = (code.length / elapsed) * 1000;
+  _clearBuf();
+
+  if (code.length < HID_MIN_LEN) return;
+  if (speed < HID_SPEED_THRESH)  return;
+
+  const input = qs('#product-search');
+  if (!input) return;
+  input.value = code;
+  _applySearch(code);
+}
+
+function _clearBuf() {
+  _buf = ''; _bufStart = 0;
+  clearTimeout(_hidTimer);
+}
+
+// ─── ПОШУК ────────────────────────────────────────────────────────────────────
+
+function _applySearch(q) {
+  if (!q) {
+    _renderProductList(null);
+    return;
+  }
+  const lower = q.toLowerCase();
+  _renderProductList(
+    _allProducts.filter(p =>
+      p.name.toLowerCase().includes(lower) ||
+      String(p.barcode).includes(q) ||
+      String(p.id).includes(q)
+    )
+  );
 }
 
 // ─── НОВІ ТОВАРИ ВІД КАСИРА ───────────────────────────────────────────────────
@@ -66,17 +131,22 @@ function _buildNewProductCard(p) {
     <div class="text-sm text-muted">${esc(p.group)} / ${esc(p.subgroup ?? '')}</div>
     <div class="fw-700">${formatCurrency(p.sell_price)}</div>`;
 
-  // Форма редагування полів що касир не знає
-  const form = _buildEditForm(p, true);
-  card.appendChild(form);
+  card.appendChild(_buildEditForm(p, true));
   return card;
 }
 
 // ─── СПИСОК ВСІХ ТОВАРІВ ─────────────────────────────────────────────────────
 
+// products === null → initial empty state (no query yet)
+// products.length === 0 → query has no matches
 function _renderProductList(products) {
   const list = qs('#product-list');
   if (!list) return;
+
+  if (products === null) {
+    list.innerHTML = '<div class="empty-state">Відскануйте штрих-код або введіть назву товару</div>';
+    return;
+  }
 
   if (products.length === 0) {
     list.innerHTML = '<div class="empty-state">Товарів не знайдено</div>';
@@ -84,7 +154,7 @@ function _renderProductList(products) {
   }
 
   list.innerHTML = '';
-  products.slice(0, 200).forEach(p => {
+  products.forEach(p => {
     const row = el('div', 'product-row');
     row.innerHTML = `
       <div class="product-row__info">
@@ -117,9 +187,6 @@ function _renderProductList(products) {
 
 function _buildEditForm(p, showGroupSelect) {
   const form = el('div', 'edit-form');
-
-  const isTobacco = p.group === 'Тютюнові вироби';
-  const hasAlcohol = p.group === 'Алкогольні напої' || p.group === 'Пиво та напої';
 
   form.innerHTML = `
     <div class="edit-grid">
@@ -161,8 +228,8 @@ function _buildEditForm(p, showGroupSelect) {
     });
   }
 
-  form.querySelector('.js-save-product').addEventListener('click', async btn => {
-    btn = form.querySelector('.js-save-product');
+  form.querySelector('.js-save-product').addEventListener('click', async () => {
+    const btn = form.querySelector('.js-save-product');
     btn.disabled = true;
     try {
       const updated = {
@@ -177,7 +244,6 @@ function _buildEditForm(p, showGroupSelect) {
       }
       await apiCall('update_product', { product: updated });
       toast('Товар збережено', 'success');
-      // Оновити кеш
       const idx = _allProducts.findIndex(x => x.id === p.id);
       if (idx >= 0) _allProducts[idx] = { ..._allProducts[idx], ...updated };
       if (showGroupSelect) form.closest('.list-card')?.remove();

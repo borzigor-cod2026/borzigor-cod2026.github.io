@@ -55,6 +55,12 @@ function openDB() {
         s.createIndex('status',    'status',    { unique: false });
         s.createIndex('timestamp', 'timestamp', { unique: false });
       }
+
+      // ── settings ───────────────────────────────────────────────────────────
+      // Кеш налаштувань з SHEET_SETTINGS. keyPath = 'key' (ім'я параметра).
+      if (!db.objectStoreNames.contains(STORES.SETTINGS)) {
+        db.createObjectStore(STORES.SETTINGS, { keyPath: 'key' });
+      }
     };
 
     req.onsuccess = (e) => resolve(e.target.result);
@@ -301,6 +307,29 @@ export async function updateOpStatus(uuid, status, extra = {}) {
 // ─────────────────────────────────────────────────────────────────────────────
 //  ЖУРНАЛ СИНХРОНІЗАЦІЙ
 // ─────────────────────────────────────────────────────────────────────────────
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  НАЛАШТУВАННЯ
+// ─────────────────────────────────────────────────────────────────────────────
+
+/** Зберігає об'єкт налаштувань {key: value} у store. */
+export async function upsertSettings(settingsObj) {
+  const db = await openDB();
+  const tx = db.transaction(STORES.SETTINGS, 'readwrite');
+  const st = tx.objectStore(STORES.SETTINGS);
+  for (const [key, value] of Object.entries(settingsObj)) {
+    st.put({ key, value });
+  }
+  await txComplete(tx);
+}
+
+/** Повертає значення одного налаштування або null якщо не знайдено. */
+export async function getSettingValue(key) {
+  const db  = await openDB();
+  const tx  = db.transaction(STORES.SETTINGS, 'readonly');
+  const rec = await wrap(tx.objectStore(STORES.SETTINGS).get(String(key)));
+  return rec?.value ?? null;
+}
 
 export async function logSync(entry) {
   const db = await openDB();

@@ -2,12 +2,12 @@
 //  cashier/js/expenses.js — форма витрат
 // ─────────────────────────────────────────────────────────────────────────────
 
-import { getShift, saveOperation } from './db.js';
+import { getShift, saveOperation, getSettingValue } from './db.js';
 import { requireAuth }             from './auth.js';
 import { generateUUID, nowISO, showBanner } from './utils.js';
 import { syncPending }             from './sync.js';
 
-const EXPENSE_CATS = [
+const EXPENSE_CATS_FALLBACK = [
   'Господарські витрати',
   'Пакети та пакування',
   'Оренда',
@@ -18,22 +18,33 @@ const EXPENSE_CATS = [
 
 let _inited = false;
 
-export function initExpenses() {
+export async function initExpenses() {
   if (_inited) return;
   _inited = true;
 
-  const sel = document.getElementById('expense-category');
-  EXPENSE_CATS.forEach(c => {
-    const opt = document.createElement('option');
-    opt.value = opt.textContent = c;
-    sel.appendChild(opt);
-  });
+  await _populateCategorySelect();
 
   document.getElementById('form-expenses')
     .addEventListener('submit', async e => { e.preventDefault(); await _submit(); });
 
   document.getElementById('btn-expenses-back')
     ?.addEventListener('click', () => import('./app.js').then(m => m.showScreen('pos')));
+}
+
+async function _populateCategorySelect() {
+  let cats = EXPENSE_CATS_FALLBACK;
+  try {
+    const raw = await getSettingValue('EXPENSE_CATEGORIES');
+    const parsed = JSON.parse(raw);
+    if (Array.isArray(parsed) && parsed.length > 0) cats = parsed;
+  } catch (_) { /* Налаштування ще не завантажені — використовуємо fallback */ }
+
+  const sel = document.getElementById('expense-category');
+  cats.forEach(c => {
+    const opt = document.createElement('option');
+    opt.value = opt.textContent = c;
+    sel.appendChild(opt);
+  });
 }
 
 async function _submit() {

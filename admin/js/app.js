@@ -2,19 +2,21 @@
 //  admin/js/app.js — маршрутизатор адмін-панелі
 // ─────────────────────────────────────────────────────────────────────────────
 
-import { configureAuth, login, logout, isAuthenticated } from './auth.js';
+import { configureAuth, login, logout, isAuthenticated }  from './auth.js';
+import { configureSyncEngine, setupOnlineListener }       from './sync.js';
 import { initDashboard }  from './dashboard.js';
 import { initExpenses }   from './expenses.js';
 import { initInventory }  from './inventory.js';
 import { initSalary }     from './salary.js';
 import { initProducts }   from './products.js';
+import { initCash }       from './cash.js';
 import { initReports }    from './reports.js';
 
 // ─── SCREENS ─────────────────────────────────────────────────────────────────
 
-const SCREENS = ['login', 'dashboard', 'expenses', 'inventory', 'salary', 'products', 'reports'];
+const SCREENS = ['login', 'dashboard', 'expenses', 'inventory', 'salary', 'products', 'cash', 'reports'];
 
-const NAV_SCREENS = ['dashboard', 'expenses', 'inventory', 'salary', 'products', 'reports'];
+const NAV_SCREENS = ['dashboard', 'expenses', 'inventory', 'salary', 'products', 'cash', 'reports'];
 
 let _activeScreen = null;
 
@@ -36,6 +38,7 @@ export function showScreen(name) {
   if (name === 'inventory') initInventory();
   if (name === 'salary')    initSalary();
   if (name === 'products')  initProducts();
+  if (name === 'cash')      initCash();
   if (name === 'reports')   initReports();
 }
 
@@ -52,9 +55,11 @@ function _updateNav(name) {
 
 document.addEventListener('DOMContentLoaded', () => {
   // Читати конфіг з localStorage
-  const gasUrl    = localStorage.getItem('admin_gasUrl')    ?? 'https://script.google.com/macros/s/AKfycbxKvUd0aOrbb5EQU_xX117qX3Opnzs_jNK0JHjAX0HJkbb27h9TuieYRXSqxr5ThtNF/exec';
-  const apiSecret = localStorage.getItem('admin_apiSecret') ?? 'H1MNaT6RrBatEs6K22BsExhjczmHreLn';
+  const gasUrl    = localStorage.getItem('admin_gasUrl')    ?? '';
+  const apiSecret = localStorage.getItem('admin_apiSecret') ?? '';
   configureAuth({ gasUrl, apiSecret });
+  configureSyncEngine({ gasUrl, apiSecret, shopId: 'all' });
+  setupOnlineListener();
 
   // Навігація по табах
   document.querySelectorAll('.nav-tab').forEach(tab => {

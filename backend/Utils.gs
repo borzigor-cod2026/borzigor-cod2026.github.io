@@ -38,11 +38,13 @@ function getSettingsMap_() {
   const sheet = ss.getSheetByName(SHEET_SETTINGS);
   if (!sheet) throw new Error('Аркуш «Налаштування» не знайдено');
 
-  const values = sheet.getRange('A2:B30').getValues();
+  const lastRow = sheet.getLastRow();
+  if (lastRow < 2) return {};
+  const values = sheet.getRange(2, 1, lastRow - 1, 2).getValues();
   const map    = {};
   for (const [key, val] of values) {
     const k = String(key).trim();
-    if (k && /^[A-Z][A-Z0-9_]+$/.test(k)) {
+    if (/^[A-Z][A-Z0-9_]*$/.test(k)) {
       map[k] = val;
     }
   }
@@ -58,7 +60,8 @@ function getSetting(key) {
 function setSetting(key, newValue) {
   const ss    = SpreadsheetApp.getActiveSpreadsheet();
   const sheet = ss.getSheetByName(SHEET_SETTINGS);
-  const col   = sheet.getRange('A2:A30').getValues();
+  const lastRow = sheet.getLastRow();
+  const col     = lastRow > 1 ? sheet.getRange(2, 1, lastRow - 1, 1).getValues() : [];
   for (let i = 0; i < col.length; i++) {
     if (String(col[i][0]).trim() === key) {
       sheet.getRange(i + 2, 2).setValue(newValue);
@@ -66,7 +69,6 @@ function setSetting(key, newValue) {
     }
   }
   // Якщо ключ не знайдено — дописати в кінець блоку налаштувань
-  const lastRow = sheet.getLastRow();
   sheet.getRange(lastRow + 1, 1).setValue(key);
   sheet.getRange(lastRow + 1, 2).setValue(newValue);
 }
@@ -107,3 +109,5 @@ function successResponse(data) {
 function errorResponse(message, code) {
   return jsonResponse({ success: false, error: message, code: code || 'error' });
 }
+
+// hook test
