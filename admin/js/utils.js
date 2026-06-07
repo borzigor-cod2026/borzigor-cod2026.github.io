@@ -11,9 +11,12 @@ import { API_VERSION, CURRENCY_SYMBOL, LOCALE,
 //  Всі запити до GAS підписуються HMAC.
 //  Конфігурація зберігається в localStorage під ключами admin_gasUrl / admin_apiSecret.
 
+const _GAS_URL    = 'https://script.google.com/macros/s/AKfycbxKvUd0aOrbb5EQU_xX117qX3Opnzs_jNK0JHjAX0HJkbb27h9TuieYRXSqxr5ThtNF/exec';
+const _API_SECRET = 'H1MNaT6RrBatEs6K22BsExhjczmHreLn';
+
 export async function apiCall(type, payload = {}) {
-  const gasUrl    = localStorage.getItem('admin_gasUrl')    ?? '';
-  const apiSecret = localStorage.getItem('admin_apiSecret') ?? '';
+  const gasUrl    = localStorage.getItem('admin_gasUrl')    ?? _GAS_URL;
+  const apiSecret = localStorage.getItem('admin_apiSecret') ?? _API_SECRET;
 
   if (!gasUrl || !apiSecret) throw new Error('GAS не налаштовано. Зверніться до розробника.');
   if (!navigator.onLine)     throw new Error('Немає підключення до мережі.');
