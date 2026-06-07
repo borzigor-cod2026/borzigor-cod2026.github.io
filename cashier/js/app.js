@@ -140,7 +140,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // 4. Кнопки заголовку
   document.getElementById('hdr-back')?.addEventListener('click', () => showScreen('pos'));
-  document.getElementById('hdr-setup')?.addEventListener('click', () => showScreen('setup'));
+  document.getElementById('hdr-setup')?.addEventListener('click', () => _showAdminPinModal());
 
   // 5. Якщо налаштування відсутні — одразу відкрити екран первинного налаштування
   if (!localStorage.getItem('gasUrl') || !localStorage.getItem('shopId')) {
@@ -235,6 +235,90 @@ document.addEventListener('shift:closed', () => {
   _shiftCloseInited = false;
   showScreen('login');
 });
+
+// ─── МОДАЛЬНЕ ВІКНО: ПЕРЕВІРКА PIN АДМІНІСТРАТОРА ─────────────────────────────
+
+function _showAdminPinModal() {
+  // Створюємо модаль один раз (lazy) і перевикористовуємо
+  let modal = document.getElementById('modal-admin-pin');
+  if (!modal) {
+    modal = document.createElement('div');
+    modal.id        = 'modal-admin-pin';
+    modal.className = 'modal-overlay';
+    modal.hidden    = true;
+    modal.innerHTML = `
+      <div class="modal">
+        <p class="modal__title">Доступ до налаштувань</p>
+        <p style="font-size:.875rem;color:var(--c-muted);margin-bottom:4px">
+          Введіть PIN адміністратора або менеджера
+        </p>
+        <input id="modal-admin-pin-input"
+               class="form-input"
+               type="password"
+               inputmode="numeric"
+               maxlength="6"
+               autocomplete="off"
+               placeholder="PIN">
+        <p id="modal-admin-pin-error"
+           style="color:var(--c-danger);font-size:.875rem;min-height:1.3em;margin-top:4px"
+           role="alert"></p>
+        <div class="modal__actions">
+          <button id="modal-admin-pin-cancel"  class="btn btn--outline">Скасувати</button>
+          <button id="modal-admin-pin-confirm" class="btn btn--primary">Підтвердити</button>
+        </div>
+      </div>`;
+    document.body.appendChild(modal);
+  }
+
+  const input      = document.getElementById('modal-admin-pin-input');
+  const errorEl    = document.getElementById('modal-admin-pin-error');
+  const cancelBtn  = document.getElementById('modal-admin-pin-cancel');
+  const confirmBtn = document.getElementById('modal-admin-pin-confirm');
+
+  // Скидаємо стан
+  input.value         = '';
+  errorEl.textContent = '';
+  modal.hidden        = false;
+  setTimeout(() => input.focus(), 80);
+
+  // Закрити при кліку на backdrop
+  modal.onclick = (e) => { if (e.target === modal) modal.hidden = true; };
+
+  cancelBtn.onclick = () => { modal.hidden = true; };
+
+  confirmBtn.onclick = async () => {
+    const pin = input.value.trim();
+    if (!pin) { errorEl.textContent = 'Введіть PIN'; return; }
+
+    confirmBtn.disabled = true;
+    const result = await login(pin);
+    confirmBtn.disabled = false;
+
+    if (!result.success) {
+      errorEl.textContent = 'Доступ заборонено';
+      input.value = '';
+      return;
+    }
+
+    const role    = result.session?.role ?? '';
+    const allowed = role === 'Адміністратор' || role === 'Менеджер';
+
+    // Сесія більше не потрібна — відкривали тільки для перевірки ролі
+    logout();
+
+    if (!allowed) {
+      errorEl.textContent = 'Доступ заборонено';
+      input.value = '';
+      return;
+    }
+
+    modal.hidden = true;
+    showScreen('setup');
+  };
+
+  // Enter-ключ для UX на планшеті
+  input.onkeydown = (e) => { if (e.key === 'Enter') confirmBtn.click(); };
+}
 
 // ─── ЕКРАН НАЛАШТУВАНЬ ────────────────────────────────────────────────────────
 
