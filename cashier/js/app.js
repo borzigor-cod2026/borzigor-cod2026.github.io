@@ -239,7 +239,6 @@ document.addEventListener('shift:closed', () => {
 // ─── МОДАЛЬНЕ ВІКНО: ПЕРЕВІРКА PIN АДМІНІСТРАТОРА ─────────────────────────────
 
 function _showAdminPinModal() {
-  // Створюємо модаль один раз (lazy) і перевикористовуємо
   let modal = document.getElementById('modal-admin-pin');
   if (!modal) {
     modal = document.createElement('div');
@@ -247,77 +246,106 @@ function _showAdminPinModal() {
     modal.className = 'modal-overlay';
     modal.hidden    = true;
     modal.innerHTML = `
-      <div class="modal">
-        <p class="modal__title">Доступ до налаштувань</p>
-        <p style="font-size:.875rem;color:var(--c-muted);margin-bottom:4px">
+      <div class="modal" style="background:var(--c-primary)">
+        <p class="modal__title" style="color:#fff">Доступ до налаштувань</p>
+        <p style="font-size:.875rem;color:rgba(255,255,255,.72);text-align:center;margin-bottom:12px">
           Введіть PIN адміністратора або менеджера
         </p>
-        <input id="modal-admin-pin-input"
-               class="form-input"
-               type="password"
-               inputmode="numeric"
-               maxlength="6"
-               autocomplete="off"
-               placeholder="PIN">
+        <div class="pin-dots">
+          <div class="pin-dot"></div>
+          <div class="pin-dot"></div>
+          <div class="pin-dot"></div>
+          <div class="pin-dot"></div>
+          <div class="pin-dot"></div>
+          <div class="pin-dot"></div>
+        </div>
         <p id="modal-admin-pin-error"
-           style="color:var(--c-danger);font-size:.875rem;min-height:1.3em;margin-top:4px"
+           style="color:#FFCDD2;font-size:.875rem;min-height:1.3em;margin-top:4px;text-align:center"
            role="alert"></p>
-        <div class="modal__actions">
-          <button id="modal-admin-pin-cancel"  class="btn btn--outline">Скасувати</button>
-          <button id="modal-admin-pin-confirm" class="btn btn--primary">Підтвердити</button>
+        <div id="modal-admin-pin-keyboard" class="pin-keyboard" style="margin:8px auto 0"
+             role="group" aria-label="Цифрова клавіатура">
+          <button class="pin-key" data-value="1">1</button>
+          <button class="pin-key" data-value="2">2</button>
+          <button class="pin-key" data-value="3">3</button>
+          <button class="pin-key" data-value="4">4</button>
+          <button class="pin-key" data-value="5">5</button>
+          <button class="pin-key" data-value="6">6</button>
+          <button class="pin-key" data-value="7">7</button>
+          <button class="pin-key" data-value="8">8</button>
+          <button class="pin-key" data-value="9">9</button>
+          <button class="pin-key pin-key--empty" aria-hidden="true" tabindex="-1"></button>
+          <button class="pin-key" data-value="0">0</button>
+          <button class="pin-key pin-key--backspace" data-value="del" aria-label="Видалити">⌫</button>
+        </div>
+        <div class="modal__actions" style="margin-top:12px">
+          <button id="modal-admin-pin-cancel" class="btn btn--outline"
+                  style="color:#fff;border-color:rgba(255,255,255,.35);flex:1">Скасувати</button>
         </div>
       </div>`;
     document.body.appendChild(modal);
   }
 
-  const input      = document.getElementById('modal-admin-pin-input');
-  const errorEl    = document.getElementById('modal-admin-pin-error');
-  const cancelBtn  = document.getElementById('modal-admin-pin-cancel');
-  const confirmBtn = document.getElementById('modal-admin-pin-confirm');
+  const dots     = modal.querySelectorAll('.pin-dot');
+  const errorEl  = document.getElementById('modal-admin-pin-error');
+  const keyboard = document.getElementById('modal-admin-pin-keyboard');
+  const cancelBtn = document.getElementById('modal-admin-pin-cancel');
 
-  // Скидаємо стан
-  input.value         = '';
+  let pin = '';
+
+  function _syncDots() {
+    dots.forEach((d, i) => d.classList.toggle('filled', i < pin.length));
+  }
+
+  pin = '';
   errorEl.textContent = '';
-  modal.hidden        = false;
-  setTimeout(() => input.focus(), 80);
+  _syncDots();
+  modal.hidden = false;
 
-  // Закрити при кліку на backdrop
-  modal.onclick = (e) => { if (e.target === modal) modal.hidden = true; };
-
+  modal.onclick   = (e) => { if (e.target === modal) modal.hidden = true; };
   cancelBtn.onclick = () => { modal.hidden = true; };
 
-  confirmBtn.onclick = async () => {
-    const pin = input.value.trim();
-    if (!pin) { errorEl.textContent = 'Введіть PIN'; return; }
+  keyboard.onclick = async (e) => {
+    const key = e.target.closest('[data-value]');
+    if (!key) return;
 
-    confirmBtn.disabled = true;
+    const v = key.dataset.value;
+    if (v === 'del') {
+      pin = pin.slice(0, -1);
+    } else if (pin.length < 6) {
+      pin += v;
+    }
+
+    _syncDots();
+    errorEl.textContent = '';
+
+    if (pin.length !== 4 && pin.length !== 6) return;
+
+    keyboard.style.pointerEvents = 'none';
     const result = await login(pin);
-    confirmBtn.disabled = false;
+    keyboard.style.pointerEvents = '';
 
-    if (!result.success) {
-      errorEl.textContent = 'Доступ заборонено';
-      input.value = '';
+    if (result.success) {
+      const role    = result.session?.role ?? '';
+      const allowed = role === 'Адміністратор' || role === 'Менеджер';
+      logout();
+      if (!allowed) {
+        errorEl.textContent = 'Доступ заборонено';
+        pin = '';
+        _syncDots();
+        return;
+      }
+      modal.hidden = true;
+      showScreen('setup');
       return;
     }
 
-    const role    = result.session?.role ?? '';
-    const allowed = role === 'Адміністратор' || role === 'Менеджер';
-
-    // Сесія більше не потрібна — відкривали тільки для перевірки ролі
-    logout();
-
-    if (!allowed) {
+    if (pin.length === 6) {
       errorEl.textContent = 'Доступ заборонено';
-      input.value = '';
-      return;
+      pin = '';
+      _syncDots();
     }
-
-    modal.hidden = true;
-    showScreen('setup');
+    // 4 цифри + невдача → продовжуємо вводити (може бути 6-значний PIN)
   };
-
-  // Enter-ключ для UX на планшеті
-  input.onkeydown = (e) => { if (e.key === 'Enter') confirmBtn.click(); };
 }
 
 // ─── ЕКРАН НАЛАШТУВАНЬ ────────────────────────────────────────────────────────
