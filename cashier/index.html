@@ -32,6 +32,11 @@
     <span id="hdr-cashier" class="header-seller" hidden></span>
     <span id="scan-badge"  class="scan-badge"    hidden></span>
     <div  id="sync-dot"    class="sync-dot"      hidden title="Синхронізація"></div>
+    <button id="hdr-setup"
+            class="btn-icon"
+            hidden
+            style="border-color:rgba(255,255,255,.3);color:#fff;background:transparent;flex-shrink:0;font-size:1.1rem"
+            aria-label="Налаштування">⚙</button>
   </header>
 
   <!-- ═══ MAIN (screens stack here) ══════════════════════════════════════════ -->
@@ -44,6 +49,70 @@
            inputmode="none"
            tabindex="-1"
            aria-label="Сканер штрихкодів">
+
+    <!-- ─── SCREEN: SETUP ───────────────────────────────────────────────────── -->
+    <div id="screen-setup" class="screen">
+      <div class="form-screen">
+        <div class="setup-logo">⚙ Налаштування</div>
+        <p class="setup-note">
+          Введіть дані підключення до сервера.<br>
+          Отримайте їх у адміністратора.
+        </p>
+
+        <form id="form-setup" class="flex flex-col gap" novalidate autocomplete="off">
+          <div class="form-group">
+            <label class="form-label" for="setup-gas-url">URL сервера (GAS)</label>
+            <input id="setup-gas-url"
+                   class="form-input"
+                   type="url"
+                   required
+                   placeholder="https://script.google.com/macros/s/…/exec"
+                   autocomplete="off"
+                   autocorrect="off"
+                   autocapitalize="off"
+                   spellcheck="false">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="setup-api-secret">Секрет API</label>
+            <input id="setup-api-secret"
+                   class="form-input"
+                   type="text"
+                   required
+                   placeholder="Рядок секрету"
+                   autocomplete="off"
+                   autocorrect="off"
+                   autocapitalize="off"
+                   spellcheck="false">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="setup-shop-id">
+              ID магазину <span class="setup-hint">(напр. SHOP_1)</span>
+            </label>
+            <input id="setup-shop-id"
+                   class="form-input"
+                   type="text"
+                   required
+                   placeholder="SHOP_1"
+                   autocomplete="off"
+                   autocorrect="off"
+                   autocapitalize="characters"
+                   spellcheck="false">
+          </div>
+
+          <p id="setup-error"  class="setup-error"  role="alert"></p>
+          <p id="setup-status" class="setup-status" role="status"></p>
+
+          <button type="submit" id="btn-setup-save" class="btn btn--primary btn--full btn--large">
+            Зберегти та продовжити
+          </button>
+          <button type="button" id="btn-setup-back" class="btn btn--ghost btn--full" hidden>
+            Назад
+          </button>
+        </form>
+      </div>
+    </div>
 
     <!-- ─── SCREEN: LOGIN ───────────────────────────────────────────────────── -->
     <div id="screen-login" class="screen is-active">

@@ -13,13 +13,14 @@ import { initReceipt }          from './receipt.js';
 
 // ─── СТАН РОУТЕРА ─────────────────────────────────────────────────────────────
 
-const SCREENS = ['login', 'shift-open', 'pos', 'shift-close', 'expenses', 'receipt'];
+const SCREENS = ['login', 'setup', 'shift-open', 'pos', 'shift-close', 'expenses', 'receipt'];
 
 let _posInited        = false;
 let _shiftOpenInited  = false;
 let _shiftCloseInited = false;
 let _expensesInited   = false;
 let _receiptInited    = false;
+let _setupInited      = false;
 
 // ─── ПУБЛІЧНИЙ API ────────────────────────────────────────────────────────────
 
@@ -35,6 +36,11 @@ export function showScreen(name) {
   _updateHeader(name);
 
   // Ліниво ініціалізувати при першому показі
+  if (name === 'setup') {
+    _prefillSetup();
+    if (!_setupInited) { _initSetupScreen(); _setupInited = true; }
+  }
+
   if (name === 'pos' && !_posInited) {
     initPOS();
     _posInited = true;
@@ -83,9 +89,10 @@ function _updateHeader(name) {
   const shiftEl   = document.getElementById('hdr-shift');
   const syncDot   = document.getElementById('sync-dot');
   const scanBadge = document.getElementById('scan-badge');
+  const setupBtn  = document.getElementById('hdr-setup');
 
   // Спочатку ховаємо все
-  [backBtn, titleEl, shopEl, cashierEl, shiftEl, syncDot, scanBadge].forEach(e => {
+  [backBtn, titleEl, shopEl, cashierEl, shiftEl, syncDot, scanBadge, setupBtn].forEach(e => {
     if (e) e.hidden = true;
   });
 
@@ -93,6 +100,12 @@ function _updateHeader(name) {
     if (titleEl) {
       titleEl.hidden      = false;
       titleEl.textContent = 'Облік продажів';
+    }
+    if (setupBtn) setupBtn.hidden = false;
+  } else if (name === 'setup') {
+    if (titleEl) {
+      titleEl.hidden      = false;
+      titleEl.textContent = 'Налаштування';
     }
   } else if (name === 'pos') {
     [syncDot, scanBadge].forEach(e => { if (e) e.hidden = false; });
@@ -125,19 +138,26 @@ document.addEventListener('DOMContentLoaded', async () => {
   // 3. PIN-клавіатура
   _initPinPad();
 
-  // 4. Кнопка «назад» у заголовку
+  // 4. Кнопки заголовку
   document.getElementById('hdr-back')?.addEventListener('click', () => showScreen('pos'));
+  document.getElementById('hdr-setup')?.addEventListener('click', () => showScreen('setup'));
 
-  // 5. Початкова синхронізація — завантажити список касирів і товарів з GAS
+  // 5. Якщо налаштування відсутні — одразу відкрити екран первинного налаштування
+  if (!localStorage.getItem('gasUrl') || !localStorage.getItem('shopId')) {
+    showScreen('setup');
+    return;
+  }
+
+  // 6. Початкова синхронізація — завантажити список касирів і товарів з GAS
   //    перед відображенням екрана входу (потребує shopId у localStorage)
   if (navigator.onLine) {
     await Promise.allSettled([refreshEmployeeCache(), refreshProductCache(), refreshSettingsCache()]);
   }
 
-  // 6. Прибрати застарілі зміни (залишити найновішу, якщо є кілька)
+  // 7. Прибрати застарілі зміни (залишити найновішу, якщо є кілька)
   await _cleanupStaleShifts();
 
-  // 7. Завжди починати з PIN — сесія зберігається тільки в пам'яті і скидається при перезавантаженні
+  // 8. Завжди починати з PIN — сесія зберігається тільки в пам'яті і скидається при перезавантаженні
   showScreen('login');
 });
 
@@ -215,3 +235,68 @@ document.addEventListener('shift:closed', () => {
   _shiftCloseInited = false;
   showScreen('login');
 });
+
+// ─── ЕКРАН НАЛАШТУВАНЬ ────────────────────────────────────────────────────────
+
+function _prefillSetup() {
+  const urlEl    = document.getElementById('setup-gas-url');
+  const secretEl = document.getElementById('setup-api-secret');
+  const shopEl   = document.getElementById('setup-shop-id');
+  const backBtn  = document.getElementById('btn-setup-back');
+  const errorEl  = document.getElementById('setup-error');
+  const statusEl = document.getElementById('setup-status');
+
+  if (urlEl)    urlEl.value    = localStorage.getItem('gasUrl')    ?? '';
+  if (secretEl) secretEl.value = localStorage.getItem('apiSecret') ?? '';
+  if (shopEl)   shopEl.value   = localStorage.getItem('shopId')    ?? '';
+  if (errorEl)  errorEl.textContent  = '';
+  if (statusEl) statusEl.textContent = '';
+
+  // Кнопка «Назад» — тільки якщо налаштування вже існують (прийшли з логіну)
+  if (backBtn) backBtn.hidden = !(localStorage.getItem('gasUrl') && localStorage.getItem('shopId'));
+}
+
+function _initSetupScreen() {
+  const form     = document.getElementById('form-setup');
+  const errorEl  = document.getElementById('setup-error');
+  const statusEl = document.getElementById('setup-status');
+  const saveBtn  = document.getElementById('btn-setup-save');
+
+  document.getElementById('btn-setup-back')?.addEventListener('click', () => showScreen('login'));
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    if (errorEl) errorEl.textContent = '';
+
+    const gasUrl    = document.getElementById('setup-gas-url').value.trim();
+    const apiSecret = document.getElementById('setup-api-secret').value.trim();
+    const shopId    = document.getElementById('setup-shop-id').value.trim();
+
+    if (!gasUrl || !apiSecret || !shopId) {
+      if (errorEl) errorEl.textContent = 'Заповніть усі поля';
+      return;
+    }
+
+    localStorage.setItem('gasUrl',    gasUrl);
+    localStorage.setItem('apiSecret', apiSecret);
+    localStorage.setItem('shopId',    shopId);
+
+    configureSyncEngine({ gasUrl, apiSecret, shopId });
+
+    if (saveBtn)  saveBtn.disabled    = true;
+    if (statusEl) statusEl.textContent = 'Підключення до сервера…';
+
+    if (navigator.onLine) {
+      await Promise.allSettled([
+        refreshEmployeeCache(),
+        refreshProductCache(),
+        refreshSettingsCache(),
+      ]);
+    }
+
+    if (saveBtn)  saveBtn.disabled    = false;
+    if (statusEl) statusEl.textContent = '';
+
+    showScreen('login');
+  });
+}

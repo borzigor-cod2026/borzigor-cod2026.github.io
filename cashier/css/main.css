@@ -238,6 +238,46 @@ input, textarea, select { user-select: auto; -webkit-user-select: auto; }
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
+   ЕКРАН НАЛАШТУВАНЬ (SETUP / ONBOARDING)
+   ═══════════════════════════════════════════════════════════════════════════ */
+.setup-logo {
+  font-size: 1.4rem;
+  font-weight: 800;
+  color: var(--c-primary);
+  text-align: center;
+}
+
+.setup-note {
+  font-size: .875rem;
+  color: var(--c-muted);
+  text-align: center;
+  line-height: 1.5;
+}
+
+.setup-hint {
+  font-weight: 400;
+  color: var(--c-muted);
+  font-size: .75rem;
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.setup-error {
+  color: var(--c-danger);
+  font-size: .875rem;
+  text-align: center;
+  min-height: 1.3em;
+}
+
+.setup-status {
+  color: var(--c-muted);
+  font-size: .875rem;
+  text-align: center;
+  min-height: 1.3em;
+  font-style: italic;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
    POS-ЕКРАН (КАСА)
    Мобільний: одна колонка. Планшет ≥768px: дві колонки.
    ═══════════════════════════════════════════════════════════════════════════ */
