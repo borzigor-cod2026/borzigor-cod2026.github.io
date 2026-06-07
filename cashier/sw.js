@@ -5,7 +5,7 @@
 //  GAS API запити ніколи не кешуються (завжди мережа).
 // ─────────────────────────────────────────────────────────────────────────────
 
-const CACHE_NAME    = 'cashier-v2';
+const CACHE_NAME    = 'cashier-v3';
 const GAS_HOSTNAME  = 'script.google.com';
 
 // Файли shell-кешу — завантажуються при install
