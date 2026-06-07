@@ -208,19 +208,27 @@ function getAdminCash_(payload) {
   const ss      = SpreadsheetApp.getActiveSpreadsheet();
   const entries = [];
 
+  // Optional shop_id filter: SHOP_1 → 'КРЕС', SHOP_2 → 'Киоск ринок', 'all'/absent → no filter
+  const filterShopId   = payload && payload.shop_id;
+  const filterShopName = filterShopId && filterShopId !== 'all'
+    ? SHOP_ID_TO_NAME_[filterShopId] || null
+    : null;
+
   // 1. Читаємо SHEET_ADMIN_CASH
   const cashSheet = ss.getSheetByName(SHEET_ADMIN_CASH);
   if (cashSheet && cashSheet.getLastRow() > 1) {
     const [hdr, ...rows] = cashSheet.getDataRange().getValues();
     rows.forEach(r => {
       const o = Object.fromEntries(hdr.map((h, j) => [h, r[j]]));
+      const shopName = String(o['Магазин'] || 'Загальне');
+      if (filterShopName && shopName !== filterShopName) return;
       entries.push({
         uuid:           String(o['UUID_Операції'] || ''),
         date:           _toISOStr_(o['Дата']),
         type:           String(o['Тип_Операції'] || ''),
         amount:         Math.abs(Number(o['Сума']) || 0),
         payment_method: String(o['Спосіб_Оплати'] || 'Готівка'),
-        shop:           String(o['Магазин'] || 'Загальне'),
+        shop:           shopName,
         category:       String(o['Категорія'] || ''),
         description:    String(o['Опис'] || ''),
         created_by:     String(o['Створив'] || 'admin'),
@@ -280,18 +288,25 @@ function getAdminCash_(payload) {
 
 /**
  * create_admin_cash_entry
- * Payload: { type, amount, payment_method, shop, category, description }
+ * Payload (existing):  { type:'Прихід'|'Витрата', amount, payment_method, shop, category, description }
+ * Payload (new form):  { type:'expense', amount, date, shop_id:'SHOP_1'|'SHOP_2'|'all', category, description }
  */
 function createAdminCashEntry_(payload) {
-  const { type, amount, payment_method, shop, category, description } = payload;
+  const SHOP_ID_TO_NAME_ = { SHOP_1: 'КРЕС', SHOP_2: 'Киоск ринок', all: 'Загальне' };
 
+  // Accept 'expense' as alias for 'Витрата'
+  let type = payload.type;
+  if (type === 'expense') type = 'Витрата';
   if (!type || !['Прихід', 'Витрата'].includes(type))
-    return errorResponse('type: Прихід або Витрата', 'bad_request');
+    return errorResponse('type: Прихід, Витрата або expense', 'bad_request');
 
-  const sum = Number(amount);
+  const sum = Number(payload.amount);
   if (!sum || sum <= 0)
     return errorResponse('amount має бути > 0', 'bad_request');
 
+  // Accept either shop (human name) or shop_id (machine key)
+  let shop = payload.shop;
+  if (!shop && payload.shop_id) shop = SHOP_ID_TO_NAME_[payload.shop_id] || payload.shop_id;
   const validShops = ['КРЕС', 'Киоск ринок', 'Загальне'];
   if (!shop || !validShops.includes(shop))
     return errorResponse('shop: ' + validShops.join(' / '), 'bad_request');
@@ -301,22 +316,22 @@ function createAdminCashEntry_(payload) {
   if (!sheet) return errorResponse('Аркуш ' + SHEET_ADMIN_CASH + ' не знайдено', 'server_error');
 
   const uuid = generateUUID();
-  const now  = new Date();
+  const date = payload.date ? new Date(payload.date) : new Date();
 
-  sheet.appendRow([
-    uuid,
-    now,
-    type,
-    sum,
-    payment_method || 'Готівка',
-    shop,
-    category || 'Інше',
-    description || '',
-    'admin',
-  ]);
+  sheet.appendRow(buildRow_(sheet, {
+    'UUID_Операції': uuid,
+    'Дата':          date,
+    'Тип_Операції':  type,
+    'Сума':          sum,
+    'Спосіб_Оплати': payload.payment_method || 'Готівка',
+    'Магазин':       shop,
+    'Категорія':     payload.category || 'Інше',
+    'Опис':          payload.description || '',
+    'Створив':       'admin',
+  }));
 
   logOperation({ type: 'create_admin_cash', status: 'ok', user: 'admin' });
-  return successResponse({ uuid, created_at: now.toISOString() });
+  return successResponse({ uuid, created_at: date.toISOString() });
 }
 
 /**

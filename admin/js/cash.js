@@ -9,8 +9,9 @@ import { apiCall, formatCurrency, formatDateTime, el, qs, toast, setLoading, esc
 
 const SCREEN_ID = 'screen-cash';
 
-let _categories  = [];
-let _formInited  = false;
+let _categories        = [];
+let _formInited        = false;
+let _expenseFormInited = false;
 
 // ─── ТОЧКА ВХОДУ ──────────────────────────────────────────────────────────────
 
@@ -23,11 +24,16 @@ export async function initCash() {
     _populateCategorySelect();
     // Показуємо журнал від новіших до старіших
     _renderHistory([...(data.entries ?? [])].reverse());
+    _renderAdminExpenses(data.entries ?? []);
 
     if (!_formInited) {
       _initForm();
       _initAddCategory();
       _formInited = true;
+    }
+    if (!_expenseFormInited) {
+      _initExpenseForm();
+      _expenseFormInited = true;
     }
   } catch (err) {
     toast(err.message, 'error');
@@ -133,6 +139,83 @@ function _initForm() {
     } finally {
       btn.disabled = false;
     }
+  });
+}
+
+// ─── АДМІН ВИТРАТИ ────────────────────────────────────────────────────────────
+
+function _initExpenseForm() {
+  const dateInput = qs('#exp-date');
+  if (dateInput && !dateInput.value) {
+    dateInput.value = new Date().toISOString().slice(0, 10);
+  }
+
+  const form = qs('#admin-expense-form');
+  if (!form) return;
+
+  form.addEventListener('submit', async ev => {
+    ev.preventDefault();
+    const btn    = form.querySelector('[type="submit"]');
+    const amount = parseFloat(qs('#exp-amount')?.value);
+
+    if (!amount || amount <= 0) {
+      toast('Введіть суму більше 0', 'error');
+      return;
+    }
+
+    btn.disabled = true;
+    try {
+      await apiCall('create_admin_cash_entry', {
+        type:        'expense',
+        date:        qs('#exp-date')?.value,
+        amount,
+        category:    qs('#exp-category')?.value,
+        shop_id:     qs('#exp-shop')?.value,
+        description: qs('#exp-desc')?.value.trim(),
+      });
+      toast('Витрату записано', 'success');
+      qs('#exp-amount').value = '';
+      qs('#exp-desc').value   = '';
+      await initCash();
+    } catch (err) {
+      toast(err.message, 'error');
+    } finally {
+      btn.disabled = false;
+    }
+  });
+}
+
+function _renderAdminExpenses(entries) {
+  const list = qs('#admin-expense-list');
+  if (!list) return;
+
+  const expenses = [...entries]
+    .filter(e => e.type === 'Витрата' && e.source === 'admin_cash')
+    .slice(-50)
+    .reverse();
+
+  if (!expenses.length) {
+    list.innerHTML = '<div class="empty-state">Витрат ще немає</div>';
+    return;
+  }
+
+  list.innerHTML = '';
+  expenses.forEach(e => {
+    const card = el('div', 'list-card');
+    card.innerHTML = `
+      <div class="list-card__header">
+        <span class="badge badge--danger">Витрата</span>
+        <span class="text-muted text-sm">${esc(e.shop)}</span>
+        <span class="list-card__time text-muted text-sm">${formatDateTime(e.date)}</span>
+      </div>
+      <div class="list-card__body">
+        <div class="list-card__title">${esc(e.category)}</div>
+        ${e.description ? `<div class="list-card__desc text-muted text-sm">${esc(e.description)}</div>` : ''}
+        <div style="margin-top:6px">
+          <span class="text-danger fw-700" style="font-size:1.05rem">−${formatCurrency(e.amount)}</span>
+        </div>
+      </div>`;
+    list.appendChild(card);
   });
 }
 

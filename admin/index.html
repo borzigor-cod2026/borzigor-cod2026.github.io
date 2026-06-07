@@ -184,6 +184,58 @@
       <div class="section-title" style="padding:0 var(--gap) var(--gap-sm)">Журнал</div>
       <div id="cash-history" class="flex flex-col gap" style="padding:0 var(--gap) var(--gap)"></div>
 
+      <!-- ─── АДМІН ВИТРАТИ ─────────────────────────────────────────────── -->
+      <div style="border-top:1px solid var(--border-color);padding:var(--gap)">
+        <div class="section-title" style="margin-bottom:var(--gap-sm)">Адмін витрати</div>
+        <form id="admin-expense-form" novalidate>
+
+          <div style="display:flex;gap:var(--gap-sm);margin-bottom:var(--gap-sm)">
+            <div class="form-group" style="flex:1">
+              <label class="form-label" for="exp-date">Дата</label>
+              <input id="exp-date" class="form-input" type="date" required>
+            </div>
+            <div class="form-group" style="flex:1">
+              <label class="form-label" for="exp-amount">Сума (₴)</label>
+              <input id="exp-amount" class="form-input" type="number" step="0.01" min="0.01"
+                     placeholder="0.00" inputmode="decimal">
+            </div>
+          </div>
+
+          <div style="display:flex;gap:var(--gap-sm);margin-bottom:var(--gap-sm)">
+            <div class="form-group" style="flex:1">
+              <label class="form-label" for="exp-category">Категорія</label>
+              <select id="exp-category" class="form-select">
+                <option value="Оренда">Оренда</option>
+                <option value="Податки">Податки</option>
+                <option value="Ліцензії">Ліцензії</option>
+                <option value="Комунальні">Комунальні</option>
+                <option value="Інше">Інше</option>
+              </select>
+            </div>
+            <div class="form-group" style="flex:1">
+              <label class="form-label" for="exp-shop">Магазин</label>
+              <select id="exp-shop" class="form-select">
+                <option value="all">Обидва</option>
+                <option value="SHOP_1">КРЕС</option>
+                <option value="SHOP_2">Киоск ринок</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-group" style="margin-bottom:var(--gap)">
+            <label class="form-label" for="exp-desc">Опис</label>
+            <textarea id="exp-desc" class="form-input" rows="2"
+                      placeholder="Необовʼязково" style="resize:vertical"></textarea>
+          </div>
+
+          <button type="submit" class="btn btn--primary" style="width:100%">Записати витрату</button>
+        </form>
+      </div>
+
+      <!-- Список останніх адмін-витрат -->
+      <div class="section-title" style="padding:0 var(--gap) var(--gap-sm)">Останні витрати</div>
+      <div id="admin-expense-list" class="flex flex-col gap" style="padding:0 var(--gap) var(--gap)"></div>
+
     </div>
 
     <!-- ─── SCREEN: REPORTS ────────────────────────────────────────────── -->
