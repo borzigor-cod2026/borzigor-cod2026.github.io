@@ -14,25 +14,22 @@ import { initReports }    from './reports.js';
 
 // ─── SCREENS ─────────────────────────────────────────────────────────────────
 
-const SCREENS = ['login', 'dashboard', 'expenses', 'inventory', 'salary', 'products', 'cash', 'reports'];
+const SCREENS = ['login', 'home', 'dashboard', 'expenses', 'inventory', 'salary', 'products', 'cash', 'reports'];
 
-const NAV_SCREENS = ['dashboard', 'expenses', 'inventory', 'salary', 'products', 'cash', 'reports'];
+const SECTION_SCREENS = ['dashboard', 'expenses', 'inventory', 'salary', 'products', 'cash', 'reports'];
 
 let _activeScreen = null;
 
 export function showScreen(name) {
-  SCREENS.forEach(s => {
-    document.getElementById(`screen-${s}`)?.classList.toggle('is-active', s === name);
-  });
+  // Auth guard — redirect to login if not authenticated
+  if (name !== 'login' && !isAuthenticated()) {
+    _activateScreen('login');
+    return;
+  }
 
-  _activeScreen = name;
-  _updateNav(name);
-  // Показати кнопку виходу на всіх екранах крім логіну
-  const logoutBtn = document.getElementById('btn-logout');
-  if (logoutBtn) logoutBtn.hidden = name === 'login';
+  _activateScreen(name);
 
-  // Ліниво ініціалізувати при першому показі
-  // Dashboard і reports перезавантажуються при кожному показі (свіжі дані)
+  // Lazy-init section screens; dashboard and reports reload every time for fresh data
   if (name === 'dashboard') initDashboard();
   if (name === 'expenses')  initExpenses();
   if (name === 'inventory') initInventory();
@@ -42,29 +39,37 @@ export function showScreen(name) {
   if (name === 'reports')   initReports();
 }
 
-function _updateNav(name) {
-  const nav = document.getElementById('admin-nav');
-  if (!nav) return;
-  nav.hidden = name === 'login';
-  nav.querySelectorAll('.nav-tab').forEach(tab => {
-    tab.classList.toggle('is-active', tab.dataset.screen === name);
+function _activateScreen(name) {
+  SCREENS.forEach(s => {
+    document.getElementById(`screen-${s}`)?.classList.toggle('is-active', s === name);
   });
+  _activeScreen = name;
+  _updateHeader(name);
+}
+
+function _updateHeader(name) {
+  const isSection = SECTION_SCREENS.includes(name);
+  document.getElementById('btn-back')?.toggleAttribute('hidden', !isSection);
+  document.getElementById('btn-logout')?.toggleAttribute('hidden', name !== 'home');
 }
 
 // ─── ІНІЦІАЛІЗАЦІЯ ────────────────────────────────────────────────────────────
 
 document.addEventListener('DOMContentLoaded', () => {
-  // Читати конфіг з localStorage
+  // Читати конфіг з localStorage (fallback до hardcoded у utils.js та auth.js)
   const gasUrl    = localStorage.getItem('admin_gasUrl')    ?? '';
   const apiSecret = localStorage.getItem('admin_apiSecret') ?? '';
   configureAuth({ gasUrl, apiSecret });
   configureSyncEngine({ gasUrl, apiSecret, shopId: 'all' });
   setupOnlineListener();
 
-  // Навігація по табах
-  document.querySelectorAll('.nav-tab').forEach(tab => {
-    tab.addEventListener('click', () => showScreen(tab.dataset.screen));
+  // Картки головного меню
+  document.querySelectorAll('.home-card[data-screen]').forEach(card => {
+    card.addEventListener('click', () => showScreen(card.dataset.screen));
   });
+
+  // Кнопка "← Назад"
+  document.getElementById('btn-back')?.addEventListener('click', () => showScreen('home'));
 
   // Кнопка виходу
   document.getElementById('btn-logout')?.addEventListener('click', () => {
@@ -75,7 +80,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // PIN-клавіатура
   _initPinPad();
 
-  showScreen(isAuthenticated() ? 'dashboard' : 'login');
+  showScreen(isAuthenticated() ? 'home' : 'login');
 });
 
 // ─── PIN ─────────────────────────────────────────────────────────────────────
@@ -107,7 +112,8 @@ function _initPinPad() {
 
         if (result.success) {
           pin = ''; _syncDots();
-          showScreen('dashboard');
+          // Use _activateScreen directly to bypass the auth guard timing issue on iOS Safari
+          _activateScreen('home');
         } else if (pin.length === 6 || !result.maybeMore) {
           if (errorEl) errorEl.textContent = result.error ?? 'Невірний PIN';
           pin = ''; _syncDots();

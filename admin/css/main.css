@@ -95,41 +95,54 @@ input, select, textarea { user-select: auto; -webkit-user-select: auto; }
   overflow: hidden;
 }
 
-/* ─── Bottom nav ─────────────────────────────────────────────────────────── */
-#admin-nav {
-  flex-shrink: 0;
-  height: var(--nav-h);
-  background: var(--c-surface);
-  border-top: 1px solid var(--c-border);
-  display: flex;
-  overflow-x: auto;
-  scrollbar-width: none;
-  padding-bottom: env(safe-area-inset-bottom, 0);
+/* ─── Home menu screen ───────────────────────────────────────────────────── */
+#screen-home {
+  background: #1a4a2e;
+  align-items: center;
+  justify-content: center;
+  padding: var(--gap);
 }
-#admin-nav::-webkit-scrollbar { display: none; }
 
-.nav-tab {
-  flex: 1;
-  min-width: 64px;
+.home-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--gap);
+  width: 100%;
+  max-width: 400px;
+}
+
+.home-card {
+  background: rgba(255,255,255,.12);
+  border: none;
+  border-radius: var(--r-lg);
+  padding: 24px 16px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  gap: 3px;
-  border: none;
-  background: transparent;
+  gap: 10px;
   cursor: pointer;
   font-family: var(--font);
-  color: var(--c-muted);
-  font-size: .65rem;
-  padding: 6px 4px;
-  transition: color var(--t), background var(--t);
-  white-space: nowrap;
+  color: #fff;
+  font-size: 15px;
+  font-weight: 600;
+  transition: background var(--t), transform .15s;
+  -webkit-tap-highlight-color: transparent;
 }
-.nav-tab:active        { background: var(--c-surface-alt); }
-.nav-tab.is-active     { color: var(--c-primary); }
-.nav-tab__icon         { font-size: 1.3rem; }
-.nav-tab.is-active .nav-tab__icon { filter: none; }
+.home-card:active {
+  background: rgba(255,255,255,.24);
+  transform: scale(.95);
+}
+.home-card--wide {
+  grid-column: 1 / -1;
+  flex-direction: row;
+  justify-content: center;
+  padding: 20px 16px;
+}
+.home-card__icon {
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+}
 
 /* ═══════════════════════════════════════════════════════════════════════════
    SCREENS
@@ -208,7 +221,7 @@ input, select, textarea { user-select: auto; -webkit-user-select: auto; }
    ═══════════════════════════════════════════════════════════════════════════ */
 .admin-toast {
   position: fixed;
-  bottom: calc(var(--nav-h) + 12px);
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 16px);
   left: 50%;
   transform: translateX(-50%);
   z-index: 2000;
@@ -504,7 +517,6 @@ input, select, textarea { user-select: auto; -webkit-user-select: auto; }
 /* ═══════════════════════════════════════════════════════════════════════════
    iOS SAFE AREAS
    ═══════════════════════════════════════════════════════════════════════════ */
-@supports (padding: env(safe-area-inset-bottom)) {
+@supports (padding: env(safe-area-inset-top)) {
   .app-header { padding-top: env(safe-area-inset-top); height: calc(var(--header-h) + env(safe-area-inset-top)); }
-  #admin-nav  { padding-bottom: env(safe-area-inset-bottom); height: calc(var(--nav-h) + env(safe-area-inset-bottom)); }
 }

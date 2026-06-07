@@ -2,7 +2,7 @@
 //  admin/sw.js — Service Worker PWA адміністратора
 // ─────────────────────────────────────────────────────────────────────────────
 
-const CACHE_NAME   = 'admin-v7';
+const CACHE_NAME   = 'admin-v8';
 const GAS_HOSTNAME = 'script.google.com';
 
 const SHELL = [
@@ -10,20 +10,20 @@ const SHELL = [
   '/admin/index.html',
   '/admin/manifest.json',
   '/admin/css/main.css',
-  '/admin/js/app.js?v=7',
-  '/admin/js/db.js?v=7',
-  '/admin/js/sync.js?v=7',
-  '/admin/js/auth.js?v=7',
-  '/admin/js/dashboard.js?v=7',
-  '/admin/js/expenses.js?v=7',
-  '/admin/js/inventory.js?v=7',
-  '/admin/js/salary.js?v=7',
-  '/admin/js/products.js?v=7',
-  '/admin/js/cash.js?v=7',
-  '/admin/js/reports.js?v=7',
-  '/admin/js/utils.js?v=7',
-  '/shared/crypto.js?v=7',
-  '/shared/constants.js?v=7',
+  '/admin/js/app.js?v=8',
+  '/admin/js/db.js?v=8',
+  '/admin/js/sync.js?v=8',
+  '/admin/js/auth.js?v=8',
+  '/admin/js/dashboard.js?v=8',
+  '/admin/js/expenses.js?v=8',
+  '/admin/js/inventory.js?v=8',
+  '/admin/js/salary.js?v=8',
+  '/admin/js/products.js?v=8',
+  '/admin/js/cash.js?v=8',
+  '/admin/js/reports.js?v=8',
+  '/admin/js/utils.js?v=8',
+  '/shared/crypto.js?v=8',
+  '/shared/constants.js?v=8',
 ];
 
 self.addEventListener('install', (event) => {
