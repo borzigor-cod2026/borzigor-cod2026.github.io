@@ -31,6 +31,7 @@ function syncBatch(payload) {
 
   try {
     const existingUUIDs = loadExistingUUIDs_();
+    const productMap    = loadProductMap_();
     const results       = [];
 
     for (const op of operations) {
@@ -48,7 +49,7 @@ function syncBatch(payload) {
       }
 
       try {
-        processOperation_(op, shopId);
+        processOperation_(op, shopId, productMap);
         existingUUIDs.add(String(uuid));
         results.push({ uuid, status: 'synced' });
         logOperation({ uuid, type: op.type, shopId, shiftId: op.shift_id || '', user: op.seller || '', status: 'synced' });
@@ -78,9 +79,23 @@ function loadExistingUUIDs_() {
 //  МАРШРУТИЗАЦІЯ ОПЕРАЦІЙ
 // ─────────────────────────────────────────────────────────────────────────────
 
-function processOperation_(op, shopId) {
+/** Завантажує всі рядки Товарів у Map<ID_Товару, rowObject> один раз. */
+function loadProductMap_() {
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_PRODUCTS);
+  const data  = sheet.getDataRange().getValues();
+  const hdr   = data[0];
+  const map   = new Map();
+  for (let i = 1; i < data.length; i++) {
+    const row = {};
+    hdr.forEach((col, j) => { row[col] = data[i][j]; });
+    map.set(String(row['ID_Товару']), row);
+  }
+  return map;
+}
+
+function processOperation_(op, shopId, productMap) {
   switch (op.type) {
-    case 'sale':           appendSale_(op, shopId);           break;
+    case 'sale':           appendSale_(op, shopId, productMap); break;
     case 'receipt':        appendReceipt_(op, shopId);        break;
     case 'expense':        appendExpense_(op, shopId);        break;
     case 'writeoff':       appendWriteoff_(op, shopId);       break;
@@ -119,8 +134,10 @@ function toSheetDate_(isoOrDate) {
 //  ПРОДАЖІ
 // ─────────────────────────────────────────────────────────────────────────────
 
-function appendSale_(op, shopId) {
+function appendSale_(op, shopId, productMap) {
   const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_SALES);
+  const productRow = productMap && op.product_id ? productMap.get(String(op.product_id)) : null;
+  const productName = (productRow && productRow['Назва']) ? productRow['Назва'] : (op.name || '');
 
   sheet.appendRow(buildRow_(sheet, {
     'UUID_Операції':        op.uuid,
@@ -129,7 +146,7 @@ function appendSale_(op, shopId) {
     'Дата_Час':             toSheetDate_(op.timestamp),
     'ID_Товару':            op.product_id    || '',
     'Штрихкод':             op.barcode       || '',
-    'Назва':                op.name          || '',
+    'Назва':                productName,
     'Група':                op.group         || '',
     'Кількість':            Number(op.quantity)       || 0,
     'Ціна_Продажі':         Number(op.price)          || 0,

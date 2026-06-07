@@ -9,6 +9,7 @@ import {
   getOperationByUUID,
   updateOpStatus,
   logSync,
+  clearProductsStore,
   upsertProducts,
   upsertEmployees,
   upsertSettings,
@@ -174,6 +175,7 @@ export async function refreshProductCache() {
     });
     const json = await res.json();
     if (json.success && Array.isArray(json.products)) {
+      await clearProductsStore();
       await upsertProducts(json.products);
       localStorage.setItem('products_synced_at', json.synced_at ?? new Date().toISOString());
     }

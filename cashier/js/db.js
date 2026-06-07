@@ -151,6 +151,14 @@ export async function upsertProduct(product) {
   await txComplete(tx);
 }
 
+/** Видаляє всі записи зі store товарів перед повним оновленням з сервера. */
+export async function clearProductsStore() {
+  const db = await openDB();
+  const tx = db.transaction(STORES.PRODUCTS, 'readwrite');
+  tx.objectStore(STORES.PRODUCTS).clear();
+  await txComplete(tx);
+}
+
 /** Оновлює залишок одного товару після продажу (офлайн-оновлення кешу). */
 export async function adjustProductStock(productId, delta) {
   const db      = await openDB();
